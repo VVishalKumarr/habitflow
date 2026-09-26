@@ -1,0 +1,69 @@
+export type Category = 'study' | 'exercise' | 'work' | 'personal' | 'other'
+export type TimeFormat = '12h' | '24h'
+export type Theme = 'light' | 'dark'
+export type WeekStart = 0 | 1
+
+export interface Profile {
+  id: string
+  username: string
+  week_start: WeekStart
+  time_format: TimeFormat
+  theme: Theme
+  last_tracker_id: string | null
+  created_at: string
+}
+
+export interface Tracker {
+  id: string
+  name: string
+  created_at: string
+  updated_at: string
+}
+
+export interface TimeSlot {
+  id: string
+  tracker_id: string
+  /** "HH:MM:SS" */
+  start_time: string
+  /** "HH:MM:SS" */
+  end_time: string
+  created_at: string
+}
+
+export interface Task {
+  id: string
+  tracker_id: string
+  time_slot_id: string
+  /** 0 = Sunday … 6 = Saturday */
+  day_of_week: number
+  title: string
+  description: string | null
+  category: Category
+  created_at: string
+  updated_at: string
+}
+
+export interface Completion {
+  task_id: string
+  completion_date: string
+  completed: boolean
+}
+
+export interface TaskInput {
+  title: string
+  description: string | null
+  category: Category
+  time_slot_id: string
+  day_of_week: number
+}
+
+export const CATEGORIES: { value: Category; label: string }[] = [
+  { value: 'study', label: 'Study' },
+  { value: 'exercise', label: 'Exercise' },
+  { value: 'work', label: 'Work' },
+  { value: 'personal', label: 'Personal' },
+  { value: 'other', label: 'Other' },
+]
+
+/** Key used for the completion map: "<taskId>|<YYYY-MM-DD>". */
+export const completionKey = (taskId: string, date: string) => `${taskId}|${date}`

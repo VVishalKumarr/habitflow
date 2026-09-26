@@ -1,0 +1,246 @@
+import { AlertTriangle, CalendarCheck, CheckCheck, ChartNoAxesColumn, Flame, ListChecks, ListTodo, Target, Trophy } from 'lucide-react'
+import { useMemo, useState, type ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ChartCard, pct } from '../components/charts/ChartCard'
+import { CompletionChart, type TrendPoint } from '../components/charts/CompletionChart'
+import { DonutChart } from '../components/charts/DonutChart'
+import { TaskPerformance } from '../components/charts/TaskPerformance'
+import { TaskProgressChart } from '../components/charts/TaskProgressChart'
+import { WeeklyChart } from '../components/charts/WeeklyChart'
+import { TrackerSelector } from '../components/dashboard/TrackerHeader'
+import { EmptyState } from '../components/ui/EmptyState'
+import { Modal } from '../components/ui/Modal'
+import { Skeleton } from '../components/ui/Spinner'
+import { CATEGORY_STYLE } from '../lib/category'
+import { DAY_NAMES, addDays, formatDate, type ISODate } from '../lib/dates'
+import type { DayStat, HabitStat } from '../lib/stats'
+import { useTrackerData } from '../store/trackerData'
+import { useTrackers } from '../store/trackers'
+import { useTrackerStats } from '../store/useTrackerStats'
+import { useToday } from '../store/view'
+
+function ProgressCard({ icon, label, value, detail }: { icon: ReactNode; label: string; value: string; detail?: string }) {
+  return (
+    <div className="card flex flex-col justify-between gap-3 p-4 sm:p-5">
+      <div className="flex items-start gap-2 text-sm leading-tight text-muted">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand [&_svg]:size-[18px]">{icon}</span>
+        <span className="min-w-0 pt-2 sm:pt-1.5">{label}</span>
+      </div>
+      <div>
+        <p className="text-2xl font-semibold tracking-tight sm:text-[28px]">{value}</p>
+        {detail && <p className="mt-0.5 text-xs leading-snug text-muted">{detail}</p>}
+      </div>
+    </div>
+  )
+}
+
+const RANGES = [
+  { days: 7, label: '7D' },
+  { days: 30, label: '30D' },
+  { days: 90, label: '90D' },
+]
+
+function trendData(daily: DayStat[], today: ISODate, days: number): TrendPoint[] {
+  const byDate = new Map(daily.map((d) => [d.date, d]))
+  const out: TrendPoint[] = []
+  for (let i = days - 1; i >= 0; i--) {
+    const date = addDays(today, -i)
+    const d = byDate.get(date)
+    out.push({
+      date,
+      completed: d?.completed ?? 0,
+      scheduled: d?.scheduled ?? 0,
+      rate: d && d.scheduled ? d.completed / d.scheduled : null,
+    })
+  }
+  return out
+}
+
+const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`
+
+function HabitDetail({ habit, onClose }: { habit: HabitStat; onClose: () => void }) {
+  const days = useTrackerData((s) => {
+    const set = new Set(s.tasks.filter((t) => habit.taskIds.includes(t.id)).map((t) => t.day_of_week))
+    return [...set].sort().map((d) => DAY_NAMES[d].slice(0, 3)).join(', ')
+  })
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      size="lg"
+      title={habit.title}
+      subtitle={
+        <span className="inline-flex items-center gap-1.5">
+          <span className={`size-2 rounded-full ${CATEGORY_STYLE[habit.category].dot}`} aria-hidden="true" />
+          {CATEGORY_STYLE[habit.category].label} · {days}
+        </span>
+      }
+    >
+      <dl className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          ['Completion', `${habit.completedDays} / ${habit.scheduledDays} days`],
+          ['Completion rate', `${(habit.rate * 100).toFixed(1)}%`],
+          ['Current streak', plural(habit.streak.current, 'day')],
+          ['Longest streak', plural(habit.streak.longest, 'day')],
+        ].map(([k, v]) => (
+          <div key={k} className="rounded-xl bg-subtle px-3.5 py-3">
+            <dt className="text-xs text-muted">{k}</dt>
+            <dd className="mt-0.5 font-semibold">{v}</dd>
+          </div>
+        ))}
+      </dl>
+      <TaskProgressChart habit={habit} />
+    </Modal>
+  )
+}
+
+export default function ProgressPage() {
+  const navigate = useNavigate()
+  const trackersStatus = useTrackers((s) => s.status)
+  const tracker = useTrackers((s) => s.trackers.find((t) => t.id === s.selectedId))
+  const dataStatus = useTrackerData((s) => s.status)
+  const dataError = useTrackerData((s) => s.error)
+  const stats = useTrackerStats()
+  const today = useToday()
+  const [range, setRange] = useState(30)
+  const [habitKey, setHabitKey] = useState<string | null>(null)
+
+  const trend = useMemo(() => trendData(stats.daily, today, range), [stats.daily, today, range])
+  const habit = stats.habits.find((h) => h.key === habitKey)
+
+  if (trackersStatus !== 'ready' || (tracker && (dataStatus === 'loading' || dataStatus === 'idle'))) {
+    return (
+      <div className="space-y-6" aria-busy="true" aria-label="Loading">
+        <Skeleton className="h-14 w-64" />
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {Array.from({ length: 8 }, (_, i) => (
+            <Skeleton key={i} className="h-28" />
+          ))}
+        </div>
+        <Skeleton className="h-80" />
+      </div>
+    )
+  }
+
+  if (!tracker) {
+    return (
+      <div className="card mx-auto max-w-2xl">
+        <EmptyState
+          icon={ChartNoAxesColumn}
+          title="No statistics yet"
+          message="Create a tracker and add some tasks — your progress will show up here."
+          action={
+            <button type="button" className="btn-primary" onClick={() => navigate('/dashboard')}>
+              Go to dashboard
+            </button>
+          }
+        />
+      </div>
+    )
+  }
+
+  if (dataStatus === 'error') {
+    return (
+      <div className="card">
+        <EmptyState icon={AlertTriangle} title="Couldn’t load statistics" message={dataError ?? ''} />
+      </div>
+    )
+  }
+
+  const noTasks = stats.habits.length === 0
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-sm text-muted">Progress</p>
+          <h1 className="mt-1 truncate text-2xl font-semibold tracking-tight sm:text-3xl">{tracker.name}</h1>
+          {stats.firstDate && (
+            <p className="mt-1 text-sm text-muted">Tracking since {formatDate(stats.firstDate, { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+          )}
+        </div>
+        <TrackerSelector />
+      </div>
+
+      {noTasks ? (
+        <div className="card">
+          <EmptyState
+            icon={ListTodo}
+            title="No tasks in this tracker yet"
+            message="Add tasks to your timetable and tick them off — charts and streaks will appear here."
+            action={
+              <button type="button" className="btn-primary" onClick={() => navigate('/dashboard')}>
+                Open timetable
+              </button>
+            }
+          />
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+            <ProgressCard icon={<Target />} label="Overall completion" value={pct(stats.totals.rate)} detail="All time, up to today" />
+            <ProgressCard
+              icon={<CheckCheck />}
+              label="Completed today"
+              value={`${stats.today.completed} / ${stats.today.scheduled}`}
+              detail={`${stats.today.scheduled - stats.today.completed} remaining today`}
+            />
+            <ProgressCard
+              icon={<CalendarCheck />}
+              label="Weekly progress"
+              value={pct(stats.weekTotals.rate)}
+              detail={`${stats.weekTotals.completed} of ${stats.weekTotals.scheduled} this week`}
+            />
+            <ProgressCard icon={<ListTodo />} label="Remaining today" value={String(stats.today.scheduled - stats.today.completed)} detail="Tasks still to do" />
+            <ProgressCard icon={<Flame />} label="Current streak" value={plural(stats.streak.current, 'day')} detail="Days with every task done" />
+            <ProgressCard icon={<Trophy />} label="Longest streak" value={plural(stats.streak.longest, 'day')} detail="Your best run" />
+            <ProgressCard icon={<CheckCheck />} label="Total completed" value={String(stats.totals.completed)} detail="Tasks ticked off" />
+            <ProgressCard icon={<ListChecks />} label="Total scheduled" value={String(stats.totals.scheduled)} detail="Up to and including today" />
+          </div>
+
+          <div className="grid gap-5 lg:grid-cols-2">
+            <ChartCard title="This week" subtitle="Share of each day’s tasks completed">
+              <WeeklyChart week={stats.week} today={today} />
+            </ChartCard>
+            <ChartCard
+              title="Completion trend"
+              subtitle="Daily completion rate"
+              action={
+                <div className="flex rounded-xl bg-subtle p-1" role="group" aria-label="Time range">
+                  {RANGES.map((r) => (
+                    <button
+                      key={r.days}
+                      type="button"
+                      onClick={() => setRange(r.days)}
+                      aria-pressed={range === r.days}
+                      className={`h-8 rounded-lg px-3 text-xs font-semibold transition-colors ${
+                        range === r.days ? 'bg-surface text-ink shadow-card' : 'text-muted hover:text-ink'
+                      }`}
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
+              }
+            >
+              <CompletionChart data={trend} caption={`Daily completion rate, last ${range} days`} />
+            </ChartCard>
+          </div>
+
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+            <ChartCard title="Task performance" subtitle="How consistently each task gets done — tap one for details">
+              <TaskPerformance habits={stats.habits} onSelect={setHabitKey} />
+            </ChartCard>
+            <ChartCard title="Completion" subtitle="All scheduled tasks up to today">
+              <div className="flex flex-1 items-center justify-center">
+                <DonutChart completed={stats.totals.completed} total={stats.totals.scheduled} />
+              </div>
+            </ChartCard>
+          </div>
+        </>
+      )}
+
+      {habit && <HabitDetail habit={habit} onClose={() => setHabitKey(null)} />}
+    </div>
+  )
+}
