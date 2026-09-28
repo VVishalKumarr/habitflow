@@ -128,6 +128,108 @@ await test('anonymous clients see nothing', async () => {
   assert.equal((data ?? []).length, 0)
 })
 
+const session = (over = {}) => ({
+  label: 'Maths revision',
+  planned_minutes: 25,
+  focus_seconds: 1500,
+  completed: true,
+  session_date: '2026-09-21',
+  started_at: '2026-09-21T10:00:00Z',
+  ended_at: '2026-09-21T10:25:00Z',
+  ...over,
+})
+
+await test('pomodoro: save own sessions, invalid ones rejected', async () => {
+  let r = await alice.c.from('pomodoro_sessions').insert([session(), session({ focus_seconds: 600, completed: false, label: 'Essay' })])
+  assert.ifError(r.error)
+  r = await alice.c.from('pomodoro_sessions').insert(session({ focus_seconds: 30 }))
+  assert.ok(r.error, 'under a minute should fail')
+  r = await alice.c.from('pomodoro_sessions').insert(session({ label: '   ' }))
+  assert.ok(r.error, 'blank label should fail')
+  r = await alice.c.from('pomodoro_sessions').select('label')
+  assert.equal(r.data.length, 2)
+})
+
+await test('pomodoro: bob cannot read, spoof or delete alice’s sessions', async () => {
+  let r = await bob.c.from('pomodoro_sessions').select('*')
+  assert.equal(r.data.length, 0)
+  r = await bob.c.from('pomodoro_sessions').insert(session({ user_id: alice.id }))
+  assert.ok(r.error, 'spoofing user_id should fail')
+  await bob.c.from('pomodoro_sessions').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+  r = await alice.c.from('pomodoro_sessions').select('id')
+  assert.equal(r.data.length, 2)
+})
+
+let friendship
+const carol = await signUp(`carol_${suffix}`)
+
+await test('friends: comparing before accepting is refused', async () => {
+  const r = await alice.c.rpc('compare_progress', { p_friend: bob.id, p_from: '2026-09-15', p_to: '2026-09-21' })
+  assert.ok(r.error)
+})
+
+await test('friends: unknown username and self are rejected', async () => {
+  let r = await alice.c.rpc('send_friend_request', { p_username: `nobody_${suffix}` })
+  assert.match(r.error?.message ?? '', /no user/i)
+  r = await alice.c.rpc('send_friend_request', { p_username: `alice_${suffix}` })
+  assert.ok(r.error)
+})
+
+await test('friends: request, duplicate, cannot self-accept, accept', async () => {
+  let r = await alice.c.rpc('send_friend_request', { p_username: ` BOB_${suffix} ` })
+  assert.ifError(r.error)
+  assert.equal(r.data, 'sent')
+  r = await alice.c.rpc('send_friend_request', { p_username: `bob_${suffix}` })
+  assert.match(r.error?.message ?? '', /already sent/i)
+  r = await alice.c.rpc('list_friends')
+  friendship = r.data[0]
+  assert.equal(friendship.username, `bob_${suffix}`)
+  assert.equal(friendship.incoming, false)
+  r = await alice.c.rpc('respond_friend_request', { p_id: friendship.id, p_accept: true })
+  assert.ok(r.error, 'requester must not accept their own request')
+  r = await carol.c.rpc('respond_friend_request', { p_id: friendship.id, p_accept: true })
+  assert.ok(r.error, 'outsider must not accept')
+  r = await alice.c.from('friendships').update({ status: 'accepted' }).eq('id', friendship.id)
+  assert.ok(r.error, 'direct update must be refused')
+  r = await alice.c.from('friendships').insert({ requester_id: alice.id, addressee_id: carol.id, status: 'accepted' })
+  assert.ok(r.error, 'direct insert must be refused')
+  r = await bob.c.rpc('list_friends')
+  assert.equal(r.data[0].incoming, true)
+  r = await bob.c.rpc('respond_friend_request', { p_id: friendship.id, p_accept: true })
+  assert.ifError(r.error)
+  r = await carol.c.from('friendships').select('*')
+  assert.equal(r.data.length, 0, 'outsiders cannot see friendships')
+})
+
+await test('friends: compare returns both users’ Pomodoro and timetable totals', async () => {
+  const done = await alice.c.from('task_completions').upsert({ task_id: aTask.id, tracker_id: aTracker.id, completion_date: '2026-09-21', completed: true }, { onConflict: 'task_id,completion_date' })
+  assert.ifError(done.error)
+  const r = await bob.c.rpc('compare_progress', { p_friend: alice.id, p_from: '2026-09-15', p_to: '2026-09-21', p_tz: 'UTC' })
+  assert.ifError(r.error)
+  assert.equal(r.data.length, 14)
+  const a = r.data.filter((x) => x.user_id === alice.id)
+  const day = a.find((x) => x.day === '2026-09-21')
+  assert.equal(day.focus_seconds, 2100)
+  assert.equal(day.sessions, 2)
+  assert.equal(day.tasks_scheduled, 1, 'back-filled completion counts as scheduled')
+  assert.equal(day.tasks_completed, 1)
+  const c = await carol.c.rpc('compare_progress', { p_friend: alice.id, p_from: '2026-09-15', p_to: '2026-09-21' })
+  assert.ok(c.error, 'non-friend cannot compare')
+  const big = await bob.c.rpc('compare_progress', { p_friend: alice.id, p_from: '2020-01-01', p_to: '2026-09-21' })
+  assert.ok(big.error, 'huge ranges are refused')
+})
+
+await test('friends: reverse request auto-accepts; unfriend removes access', async () => {
+  let r = await carol.c.rpc('send_friend_request', { p_username: `alice_${suffix}` })
+  assert.equal(r.data, 'sent')
+  r = await alice.c.rpc('send_friend_request', { p_username: `carol_${suffix}` })
+  assert.equal(r.data, 'accepted')
+  r = await bob.c.from('friendships').delete().eq('id', friendship.id)
+  assert.ifError(r.error)
+  r = await bob.c.rpc('compare_progress', { p_friend: alice.id, p_from: '2026-09-15', p_to: '2026-09-21' })
+  assert.ok(r.error, 'access ends after unfriending')
+})
+
 await test('deleting a tracker cascades its data', async () => {
   const r = await alice.c.from('trackers').delete().eq('id', aTracker.id)
   assert.ifError(r.error)
@@ -136,7 +238,7 @@ await test('deleting a tracker cascades its data', async () => {
 })
 
 await test('delete_account removes the user (cleanup)', async () => {
-  for (const u of [alice, bob]) {
+  for (const u of [alice, bob, carol]) {
     const r = await u.c.rpc('delete_account')
     assert.ifError(r.error)
   }

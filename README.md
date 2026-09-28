@@ -20,6 +20,13 @@ One codebase ships as a website and as an Android app (Capacitor).
 - Progress page: overall %, today, weekly %, remaining, current / longest streak,
   totals, weekly bar chart, trend line (7/30/90 days), task performance, donut,
   per-task detail with history
+- **Pomodoro focus timer**: focus / short / long breaks with custom lengths, name the
+  task you're working on (one-tap suggestions from today's timetable), pause, finish early,
+  keeps running across pages and app restarts, chime + vibration when time is up
+- Progress is split into **Timetable** and **Pomodoro** tabs; Pomodoro shows focus time
+  today / this week / total, streaks, daily focus chart, time per task and session history
+- **Friends**: send requests by username, accept / decline, unfriend, and compare
+  progress side by side (Pomodoro and timetable shown separately, 7/30/90 days)
 - Settings: light / dark theme, first day of week, 12/24-hour time, JSON export,
   account deletion
 - Android: back button closes dialogs → navigates → exits, safe areas, share-sheet export
@@ -49,8 +56,9 @@ One codebase ships as a website and as an Android app (Capacitor).
 │   │   ├── modals/             TaskForm, TaskOptions, TimeSlot, TrackerForm, DialogHost
 │   │   ├── charts/             WeeklyChart, CompletionChart, DonutChart, TaskPerformance, TaskProgressChart
 │   │   └── ui/                 Modal, ConfirmModal, Dropdown, Field, Toaster, Spinner/Skeleton, EmptyState
-│   └── pages/                  Login, Register, Dashboard, Progress, Settings
-├── supabase/schema.sql         tables, indexes, triggers, RLS policies, delete_account()
+│   └── pages/                  Login, Register, Dashboard, Focus, Progress, Friends, Compare, Settings
+├── supabase/schema.sql         tables, indexes, triggers, RLS policies, delete_account(), friends functions
+├── supabase/migrations/        incremental SQL for existing projects
 ├── tests/                      api-security.test.mjs, e2e.mjs
 ├── android/                    Capacitor Android project
 ├── capacitor.config.ts

@@ -56,7 +56,7 @@ function Segmented<T extends string | number>({ label, value, options, onChange 
 }
 
 async function exportAll(username: string) {
-  const [trackers, slots, tasks, completions] = await Promise.all([
+  const [trackers, slots, tasks, completions, pomodoro] = await Promise.all([
     supabase.from('trackers').select('id, name, created_at, updated_at').order('created_at'),
     supabase.from('time_slots').select('id, tracker_id, start_time, end_time, created_at'),
     supabase.from('tasks').select('id, tracker_id, time_slot_id, day_of_week, title, description, category, created_at, updated_at'),
@@ -69,8 +69,12 @@ async function exportAll(username: string) {
         if (r.data.length < 1000) return { data: rows, error: null }
       }
     })(),
+    supabase
+      .from('pomodoro_sessions')
+      .select('label, planned_minutes, focus_seconds, completed, session_date, started_at, ended_at')
+      .order('ended_at'),
   ])
-  for (const r of [trackers, slots, tasks, completions]) if (r.error) throw r.error
+  for (const r of [trackers, slots, tasks, completions, pomodoro]) if (r.error) throw r.error
   const data = {
     app: 'HabitFlow',
     exported_at: new Date().toISOString(),
@@ -81,6 +85,7 @@ async function exportAll(username: string) {
       tasks: (tasks.data ?? []).filter((x) => x.tracker_id === t.id),
     })),
     completions: completions.data,
+    pomodoro_sessions: pomodoro.data,
   }
   await saveJsonFile(`habitflow-${username}-${todayISO()}.json`, data)
 }
@@ -174,7 +179,7 @@ export default function SettingsPage() {
       </Section>
 
       <Section title="Data">
-        <Row label="Export data" hint="Download all trackers, tasks and history as JSON.">
+        <Row label="Export data" hint="Download all trackers, tasks, history and focus sessions as JSON.">
           <button type="button" className="btn-secondary" onClick={onExport} disabled={exporting}>
             {exporting ? <Spinner className="size-4" /> : <Download className="size-4" aria-hidden="true" />}
             Export

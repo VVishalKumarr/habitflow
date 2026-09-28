@@ -1,14 +1,54 @@
-import { ChartNoAxesColumn, ChevronDown, LayoutDashboard, LogOut, Settings } from 'lucide-react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { ChartNoAxesColumn, ChevronDown, LayoutDashboard, LogOut, Settings, Timer, Users } from 'lucide-react'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../store/auth'
+import { useFriends } from '../../store/friends'
+import { formatClock, MODE_LABEL, usePomodoro, useRemaining } from '../../store/pomodoro'
 import { Dropdown, MenuDivider, MenuItem } from '../ui/Dropdown'
 import { Logo } from './Logo'
 
 const NAV = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/focus', label: 'Focus', icon: Timer },
   { to: '/progress', label: 'Progress', icon: ChartNoAxesColumn },
+  { to: '/friends', label: 'Friends', icon: Users },
   { to: '/settings', label: 'Settings', icon: Settings },
 ]
+
+/** Number of friend requests waiting for an answer, shown on the Friends tab. */
+function useRequestCount() {
+  return useFriends((s) => s.friends.filter((f) => f.status === 'pending' && f.incoming).length)
+}
+
+function Badge({ count, className = '' }: { count: number; className?: string }) {
+  if (!count) return null
+  return (
+    <span className={`flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-danger px-1 text-[11px] font-semibold text-white ${className}`}>
+      {count}
+      <span className="sr-only"> pending friend {count === 1 ? 'request' : 'requests'}</span>
+    </span>
+  )
+}
+
+/** Running / paused timer shortcut in the header, hidden on the Focus page itself. */
+function TimerPill() {
+  const started = usePomodoro((s) => s.startedAt !== null)
+  const running = usePomodoro((s) => s.endAt !== null)
+  const mode = usePomodoro((s) => s.mode)
+  const remaining = useRemaining(1000)
+  const { pathname } = useLocation()
+  if (!started || pathname === '/focus') return null
+  return (
+    <NavLink
+      to="/focus"
+      className="flex h-9 items-center gap-2 rounded-full bg-brand-soft px-3 text-sm font-semibold text-brand-ink tabular-nums"
+      aria-label={`${MODE_LABEL[mode]} timer, ${formatClock(remaining)} left${running ? '' : ', paused'}. Open focus timer`}
+    >
+      <Timer className={`size-4 ${running ? 'animate-pulse' : ''}`} aria-hidden="true" />
+      {formatClock(remaining)}
+      {!running && <span className="text-xs font-medium">Paused</span>}
+    </NavLink>
+  )
+}
 
 function UserMenu() {
   const username = useAuth((s) => s.profile?.username ?? '')
@@ -57,6 +97,7 @@ function UserMenu() {
 }
 
 export function AppShell() {
+  const requests = useRequestCount()
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="sticky top-0 z-30 border-b border-line bg-surface/85 pt-safe backdrop-blur-md">
@@ -77,10 +118,12 @@ export function AppShell() {
               >
                 <Icon className="size-[18px]" aria-hidden="true" />
                 {label}
+                {to === '/friends' && <Badge count={requests} />}
               </NavLink>
             ))}
           </nav>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            <TimerPill />
             <UserMenu />
           </div>
         </div>
@@ -94,7 +137,7 @@ export function AppShell() {
         aria-label="Main"
         className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 pb-safe backdrop-blur-md md:hidden"
       >
-        <div className="grid grid-cols-3">
+        <div className="grid grid-cols-5">
           {NAV.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
@@ -107,8 +150,9 @@ export function AppShell() {
             >
               {({ isActive }) => (
                 <>
-                  <span className={`flex h-7 w-14 items-center justify-center rounded-full transition-colors ${isActive ? 'bg-brand-soft' : ''}`}>
+                  <span className={`relative flex h-7 w-12 items-center justify-center rounded-full transition-colors ${isActive ? 'bg-brand-soft' : ''}`}>
                     <Icon className="size-5" aria-hidden="true" />
+                    {to === '/friends' && <Badge count={requests} className="absolute -top-1 right-0.5" />}
                   </span>
                   {label}
                 </>

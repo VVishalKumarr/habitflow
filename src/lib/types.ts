@@ -57,6 +57,40 @@ export interface TaskInput {
   day_of_week: number
 }
 
+export interface PomodoroSession {
+  id: string
+  label: string
+  planned_minutes: number
+  focus_seconds: number
+  /** false when the user finished before the timer ran out */
+  completed: boolean
+  session_date: string
+  started_at: string
+  ended_at: string
+}
+
+export type FriendStatus = 'pending' | 'accepted'
+
+export interface Friend {
+  /** friendship row id */
+  id: string
+  friend_id: string
+  username: string
+  status: FriendStatus
+  /** true when the other person sent the request */
+  incoming: boolean
+  created_at: string
+}
+
+export interface CompareRow {
+  user_id: string
+  day: string
+  focus_seconds: number
+  sessions: number
+  tasks_scheduled: number
+  tasks_completed: number
+}
+
 export const CATEGORIES: { value: Category; label: string }[] = [
   { value: 'study', label: 'Study' },
   { value: 'exercise', label: 'Exercise' },

@@ -7,11 +7,16 @@ import { Toaster } from './components/ui/Toaster'
 import { exitApp, registerBackButton, syncStatusBar } from './lib/native'
 import { isConfigured } from './lib/supabase'
 import DashboardPage from './pages/DashboardPage'
+import FocusPage from './pages/FocusPage'
+import FriendsPage from './pages/FriendsPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import SettingsPage from './pages/SettingsPage'
 import { useAuth } from './store/auth'
 import { useDialogs } from './store/dialogs'
+import { useFriends } from './store/friends'
+import { formatClock, MODE_LABEL, usePomodoro, useRemaining } from './store/pomodoro'
+import { usePomodoroSessions } from './store/pomodoroSessions'
 import { useTrackerData } from './store/trackerData'
 import { useTrackers } from './store/trackers'
 import { popBack } from './store/ui'
@@ -19,6 +24,7 @@ import { useView } from './store/view'
 
 // Charts are the heaviest dependency; load them only when the Progress page opens.
 const ProgressPage = lazy(() => import('./pages/ProgressPage'))
+const ComparePage = lazy(() => import('./pages/ComparePage'))
 
 function RequireAuth() {
   const status = useAuth((s) => s.status)
@@ -45,6 +51,8 @@ function AuthenticatedApp() {
 
   useEffect(() => {
     loadTrackers()
+    usePomodoroSessions.getState().load()
+    useFriends.getState().load()
   }, [userId, loadTrackers])
 
   useEffect(() => {
@@ -55,10 +63,36 @@ function AuthenticatedApp() {
 
   return (
     <>
+      <PomodoroRunner />
       <AppShell />
       <DialogHost />
     </>
   )
+}
+
+/** Finishes the Pomodoro timer on time on every page and shows it in the tab title. */
+function PomodoroRunner() {
+  const running = usePomodoro((s) => s.endAt !== null)
+  const mode = usePomodoro((s) => s.mode)
+  const remaining = useRemaining(1000)
+
+  useEffect(() => {
+    const tick = () => usePomodoro.getState().tick()
+    tick()
+    const id = setInterval(tick, 500)
+    document.addEventListener('visibilitychange', tick)
+    return () => {
+      clearInterval(id)
+      document.removeEventListener('visibilitychange', tick)
+    }
+  }, [])
+
+  useEffect(() => {
+    const base = 'HabitFlow — Habit Tracker'
+    document.title = running ? `${formatClock(remaining)} · ${MODE_LABEL[mode]} — ${base}` : base
+  }, [running, remaining, mode])
+
+  return null
 }
 
 /** Resets per-user state on logout and wires the Android back button. */
@@ -74,6 +108,9 @@ function AppEffects() {
       useTrackerData.getState().reset()
       useDialogs.getState().close()
       useView.getState().goToday()
+      usePomodoro.getState().resetAll()
+      usePomodoroSessions.getState().reset()
+      useFriends.getState().reset()
     }
   }, [status])
 
@@ -84,8 +121,8 @@ function AppEffects() {
       registerBackButton(() => {
         if (popBack()) return
         const path = location.pathname
-        if (path === '/progress' || path === '/settings') navigate('/dashboard')
-        else if (path === '/register') navigate('/login')
+        if (path.startsWith('/friends/')) navigate('/friends')
+        else if (path !== '/dashboard' && path !== '/login') navigate(path === '/register' ? '/login' : '/dashboard')
         else exitApp()
       }),
     [location.pathname, navigate],
@@ -144,6 +181,22 @@ export default function App() {
                 }
               >
                 <ProgressPage />
+              </Suspense>
+            }
+          />
+          <Route path="/focus" element={<FocusPage />} />
+          <Route path="/friends" element={<FriendsPage />} />
+          <Route
+            path="/friends/:friendId"
+            element={
+              <Suspense
+                fallback={
+                  <div className="flex justify-center py-20 text-muted">
+                    <Spinner />
+                  </div>
+                }
+              >
+                <ComparePage />
               </Suspense>
             }
           />

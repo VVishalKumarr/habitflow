@@ -1,12 +1,13 @@
 import { AlertTriangle, CalendarCheck, CheckCheck, ChartNoAxesColumn, Flame, ListChecks, ListTodo, Target, Trophy } from 'lucide-react'
 import { useMemo, useState, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ChartCard, pct } from '../components/charts/ChartCard'
 import { CompletionChart, type TrendPoint } from '../components/charts/CompletionChart'
 import { DonutChart } from '../components/charts/DonutChart'
 import { TaskPerformance } from '../components/charts/TaskPerformance'
 import { TaskProgressChart } from '../components/charts/TaskProgressChart'
 import { WeeklyChart } from '../components/charts/WeeklyChart'
+import { PomodoroProgress } from '../components/progress/PomodoroProgress'
 import { TrackerSelector } from '../components/dashboard/TrackerHeader'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Modal } from '../components/ui/Modal'
@@ -94,7 +95,7 @@ function HabitDetail({ habit, onClose }: { habit: HabitStat; onClose: () => void
   )
 }
 
-export default function ProgressPage() {
+function TimetableProgress() {
   const navigate = useNavigate()
   const trackersStatus = useTrackers((s) => s.status)
   const tracker = useTrackers((s) => s.trackers.find((t) => t.id === s.selectedId))
@@ -153,7 +154,7 @@ export default function ProgressPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <p className="text-sm text-muted">Progress</p>
+          <p className="text-sm text-muted">Timetable progress</p>
           <h1 className="mt-1 truncate text-2xl font-semibold tracking-tight sm:text-3xl">{tracker.name}</h1>
           {stats.firstDate && (
             <p className="mt-1 text-sm text-muted">Tracking since {formatDate(stats.firstDate, { month: 'long', day: 'numeric', year: 'numeric' })}</p>
@@ -241,6 +242,44 @@ export default function ProgressPage() {
       )}
 
       {habit && <HabitDetail habit={habit} onClose={() => setHabitKey(null)} />}
+    </div>
+  )
+}
+
+type ProgressTab = 'timetable' | 'pomodoro'
+
+/** Timetable and Pomodoro progress are tracked and shown separately. */
+export default function ProgressPage() {
+  const [params, setParams] = useSearchParams()
+  const tab: ProgressTab = params.get('view') === 'pomodoro' ? 'pomodoro' : 'timetable'
+  const tabs: { value: ProgressTab; label: string }[] = [
+    { value: 'timetable', label: 'Timetable' },
+    { value: 'pomodoro', label: 'Pomodoro' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div className="flex w-full rounded-xl bg-subtle p-1 sm:w-fit" role="tablist" aria-label="Progress type">
+        {tabs.map((t) => (
+          <button
+            key={t.value}
+            type="button"
+            role="tab"
+            id={`progress-tab-${t.value}`}
+            aria-selected={tab === t.value}
+            aria-controls="progress-panel"
+            onClick={() => setParams(t.value === 'timetable' ? {} : { view: t.value }, { replace: true })}
+            className={`h-9 flex-1 rounded-lg px-5 text-sm font-medium transition-colors sm:flex-none ${
+              tab === t.value ? 'bg-surface text-ink shadow-card' : 'text-muted hover:text-ink'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <div id="progress-panel" role="tabpanel" aria-labelledby={`progress-tab-${tab}`}>
+        {tab === 'timetable' ? <TimetableProgress /> : <PomodoroProgress />}
+      </div>
     </div>
   )
 }

@@ -20,6 +20,7 @@
   --color-success-soft: var(--success-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
+  --color-rival: var(--rival);
 
   --color-cat-study: var(--cat-study);
   --color-cat-exercise: var(--cat-exercise);
@@ -46,6 +47,8 @@
   --success-soft: #e3f6ee;
   --danger: #d9364a;
   --danger-soft: #fdecee;
+  /* second series when comparing with a friend (validated against --brand for colour-blind safety) */
+  --rival: #c96f00;
 
   --cat-study: #3b82f6;
   --cat-exercise: #10b981;
@@ -71,6 +74,7 @@
   --success-soft: #16352b;
   --danger: #f06475;
   --danger-soft: #3d1c23;
+  --rival: #cc7a12;
   color-scheme: dark;
 }
 
