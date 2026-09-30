@@ -1,8 +1,41 @@
+import type { Feature, LimitKey } from '../config'
+
+type PlanErrorHandler = (key: Feature | LimitKey, message: string) => void
+let onPlanError: PlanErrorHandler | null = null
+
+/** The upgrade dialog registers itself here (avoids a store import cycle). */
+export function setPlanErrorHandler(fn: PlanErrorHandler) {
+  onPlanError = fn
+}
+
+const LIMIT_TEXT: Record<string, string> = {
+  trackers: 'You’ve reached the free tracker limit.',
+  friends: 'You’ve reached the free friend limit.',
+}
+
+/**
+ * Server-side plan errors look like "PLAN_LIMIT:trackers:2" or
+ * "PRO_REQUIRED:csv_export". They open the upgrade dialog and return a
+ * short message.
+ */
+export function planError(msg: string): { key: Feature | LimitKey; message: string } | null {
+  const limit = /PLAN_LIMIT:(\w+)/.exec(msg)
+  if (limit) return { key: limit[1] as LimitKey, message: LIMIT_TEXT[limit[1]] ?? 'You’ve reached a free plan limit.' }
+  const pro = /PRO_REQUIRED:(\w+)/.exec(msg)
+  if (pro) return { key: pro[1] as Feature, message: 'This feature is available with HabitFlow Pro.' }
+  return null
+}
+
 /** Turn Supabase / network errors into short, human messages. */
 export function friendlyError(err: unknown, fallback = 'Something went wrong. Please try again.'): string {
   const e = err as { message?: string; code?: string } | null
   const msg = e?.message ?? ''
   if (!msg && !e?.code) return fallback
+  const plan = planError(msg)
+  if (plan) {
+    onPlanError?.(plan.key, plan.message)
+    return plan.message
+  }
   if (/failed to fetch|network|load failed/i.test(msg)) return 'Network error — check your connection and try again.'
   if (e?.code === '23P01' || /overlaps/i.test(msg)) return 'That time slot overlaps an existing slot.'
   if (e?.code === '23505') return 'That already exists.'

@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Field } from '../components/ui/Field'
 import { Spinner } from '../components/ui/Spinner'
+import { analytics } from '../lib/analytics'
 import { normalizeUsername } from '../lib/auth'
 import { useAuth } from '../store/auth'
 import { AuthLayout } from './AuthLayout'
@@ -26,6 +27,7 @@ export default function LoginPage() {
     setBusy(true)
     try {
       await signIn(username, password)
+      analytics.track('login')
       // The route guard redirects once the session is picked up.
     } catch (err) {
       setFormError((err as Error).message)
@@ -62,6 +64,11 @@ export default function LoginPage() {
           onChange={(e) => setPassword(e.target.value)}
           error={errors.password}
         />
+        <div className="-mt-2 text-right">
+          <Link to="/forgot-password" className="text-sm font-medium text-brand hover:underline">
+            Forgot password?
+          </Link>
+        </div>
         <button type="submit" className="btn-primary h-11 w-full text-[15px]" disabled={busy}>
           {busy && <Spinner className="size-4" />}
           {busy ? 'Logging in…' : 'Log in'}

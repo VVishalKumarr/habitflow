@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { analytics } from '../lib/analytics'
 import { friendlyError } from '../lib/errors'
 import { supabase } from '../lib/supabase'
 import type { Tracker } from '../lib/types'
@@ -74,6 +75,7 @@ export const useTrackers = create<TrackersState>((set, get) => ({
       .single()
     if (error) throw new Error(friendlyError(error))
     const tracker = data as Tracker
+    analytics.track('tracker_created')
     set({ trackers: [...get().trackers, tracker], selectedId: tracker.id })
     rememberSelection(tracker.id)
     return tracker
@@ -93,6 +95,7 @@ export const useTrackers = create<TrackersState>((set, get) => ({
   remove: async (id) => {
     const { error } = await supabase.from('trackers').delete().eq('id', id)
     if (error) throw new Error(friendlyError(error))
+    analytics.track('tracker_deleted')
     const trackers = get().trackers.filter((t) => t.id !== id)
     const selectedId = get().selectedId === id ? (trackers[0]?.id ?? null) : get().selectedId
     set({ trackers, selectedId })

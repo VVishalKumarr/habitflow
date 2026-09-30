@@ -1,5 +1,6 @@
 import { CalendarCheck2, ChartNoAxesColumn, Layers } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { Logo } from '../components/layout/Logo'
 
 const POINTS = [
@@ -12,7 +13,9 @@ export function AuthLayout({ title, subtitle, children }: { title: string; subti
   return (
     <div className="flex min-h-dvh pt-safe pb-safe">
       <aside className="relative hidden w-[44%] max-w-xl flex-col justify-between overflow-hidden bg-brand p-12 text-white lg:flex">
-        <Logo inverted />
+        <Link to="/" aria-label="HabitFlow home" className="w-fit rounded-lg">
+          <Logo inverted />
+        </Link>
         <div>
           <h2 className="text-3xl leading-tight font-semibold tracking-tight">Build routines that actually stick.</h2>
           <ul className="mt-8 space-y-4">
@@ -33,11 +36,24 @@ export function AuthLayout({ title, subtitle, children }: { title: string; subti
       <main className="flex flex-1 items-center justify-center px-5 py-10">
         <div className="w-full max-w-sm">
           <div className="mb-8 lg:hidden">
-            <Logo />
+            <Link to="/" aria-label="HabitFlow home" className="inline-block rounded-lg">
+              <Logo />
+            </Link>
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
           <p className="mt-1.5 text-muted">{subtitle}</p>
           <div className="mt-8">{children}</div>
+          <p className="mt-10 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-muted">
+            <Link to="/privacy" className="hover:text-ink hover:underline">
+              Privacy
+            </Link>
+            <Link to="/terms" className="hover:text-ink hover:underline">
+              Terms
+            </Link>
+            <Link to="/help" className="hover:text-ink hover:underline">
+              Help
+            </Link>
+          </p>
         </div>
       </main>
     </div>

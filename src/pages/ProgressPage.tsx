@@ -1,5 +1,5 @@
 import { AlertTriangle, CalendarCheck, CheckCheck, ChartNoAxesColumn, Flame, ListChecks, ListTodo, Target, Trophy } from 'lucide-react'
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ChartCard, pct } from '../components/charts/ChartCard'
 import { CompletionChart, type TrendPoint } from '../components/charts/CompletionChart'
@@ -19,6 +19,9 @@ import { useTrackerData } from '../store/trackerData'
 import { useTrackers } from '../store/trackers'
 import { useTrackerStats } from '../store/useTrackerStats'
 import { useToday } from '../store/view'
+import { RangeToggle } from '../components/charts/RangeToggle'
+import { AdSlot } from '../components/ads/AdSlot'
+import { analytics } from '../lib/analytics'
 
 function ProgressCard({ icon, label, value, detail }: { icon: ReactNode; label: string; value: string; detail?: string }) {
   return (
@@ -34,12 +37,6 @@ function ProgressCard({ icon, label, value, detail }: { icon: ReactNode; label: 
     </div>
   )
 }
-
-const RANGES = [
-  { days: 7, label: '7D' },
-  { days: 30, label: '30D' },
-  { days: 90, label: '90D' },
-]
 
 function trendData(daily: DayStat[], today: ISODate, days: number): TrendPoint[] {
   const byDate = new Map(daily.map((d) => [d.date, d]))
@@ -207,21 +204,7 @@ function TimetableProgress() {
               title="Completion trend"
               subtitle="Daily completion rate"
               action={
-                <div className="flex rounded-xl bg-subtle p-1" role="group" aria-label="Time range">
-                  {RANGES.map((r) => (
-                    <button
-                      key={r.days}
-                      type="button"
-                      onClick={() => setRange(r.days)}
-                      aria-pressed={range === r.days}
-                      className={`h-8 rounded-lg px-3 text-xs font-semibold transition-colors ${
-                        range === r.days ? 'bg-surface text-ink shadow-card' : 'text-muted hover:text-ink'
-                      }`}
-                    >
-                      {r.label}
-                    </button>
-                  ))}
-                </div>
+                <RangeToggle value={range} onChange={setRange} />
               }
             >
               <CompletionChart data={trend} caption={`Daily completion rate, last ${range} days`} />
@@ -252,6 +235,9 @@ type ProgressTab = 'timetable' | 'pomodoro'
 export default function ProgressPage() {
   const [params, setParams] = useSearchParams()
   const tab: ProgressTab = params.get('view') === 'pomodoro' ? 'pomodoro' : 'timetable'
+  useEffect(() => {
+    analytics.track('progress_viewed', { tab })
+  }, [tab])
   const tabs: { value: ProgressTab; label: string }[] = [
     { value: 'timetable', label: 'Timetable' },
     { value: 'pomodoro', label: 'Pomodoro' },
@@ -280,6 +266,7 @@ export default function ProgressPage() {
       <div id="progress-panel" role="tabpanel" aria-labelledby={`progress-tab-${tab}`}>
         {tab === 'timetable' ? <TimetableProgress /> : <PomodoroProgress />}
       </div>
+      <AdSlot placement="progress" />
     </div>
   )
 }

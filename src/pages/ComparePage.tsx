@@ -11,12 +11,7 @@ import type { CompareRow } from '../lib/types'
 import { useAuth } from '../store/auth'
 import { fetchComparison, useFriends } from '../store/friends'
 import { useToday } from '../store/view'
-
-const RANGES = [
-  { days: 7, label: '7D' },
-  { days: 30, label: '30D' },
-  { days: 90, label: '90D' },
-]
+import { RangeToggle } from '../components/charts/RangeToggle'
 
 interface Totals {
   seconds: number
@@ -153,21 +148,7 @@ export default function ComparePage() {
             <CompareLegend me="You" them={name} />
           </div>
         </div>
-        <div className="flex rounded-xl bg-subtle p-1" role="group" aria-label="Time range">
-          {RANGES.map((r) => (
-            <button
-              key={r.days}
-              type="button"
-              onClick={() => setRange(r.days)}
-              aria-pressed={range === r.days}
-              className={`h-9 flex-1 rounded-lg px-4 text-sm font-semibold transition-colors sm:flex-none ${
-                range === r.days ? 'bg-surface text-ink shadow-card' : 'text-muted hover:text-ink'
-              }`}
-            >
-              {r.label}
-            </button>
-          ))}
-        </div>
+        <RangeToggle value={range} onChange={setRange} size="md" />
       </div>
 
       {error ? (

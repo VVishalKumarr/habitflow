@@ -1,5 +1,6 @@
 import { CheckCircle2, CircleDot, Coffee, Pause, Play, RotateCcw, SkipForward, SlidersHorizontal, Square, Timer } from 'lucide-react'
 import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { FocusSounds } from '../components/focus/FocusSounds'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Modal } from '../components/ui/Modal'
 import { dayOfWeek } from '../lib/dates'
@@ -330,6 +331,7 @@ export default function FocusPage() {
 
         <div className="space-y-6">
           <TodaySessions />
+          <FocusSounds />
           <section className="card">
             <EmptyState
               icon={Timer}

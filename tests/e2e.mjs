@@ -21,7 +21,8 @@ async function step(name, fn) {
     console.log(`  ✓ ${name}`)
   } catch (e) {
     failures.push(name)
-    console.error(`  ✗ ${name}\n    ${e.message.split('\n')[0]}`)
+    console.error(`  ✗ ${name}\n    ${e.message.split('\n').slice(0, 4).join('\n    ')}`)
+    await page.screenshot({ path: `${SHOTS}/fail-${failures.length}.png` }).catch(() => {})
   }
 }
 
@@ -43,14 +44,15 @@ const page = await ctx.newPage()
 watch(page)
 
 await step('unauthenticated /dashboard redirects to login', async () => {
-  await page.goto(`${BASE}/#/dashboard`)
+  await page.goto(`${BASE}/dashboard`)
   await page.getByRole('heading', { name: 'Welcome back' }).waitFor()
-  assert.match(page.url(), /#\/login/)
+  assert.match(page.url(), /\/login$/)
   await page.screenshot({ path: `${SHOTS}/login-1440.png` })
 })
 
 await step('register validation errors', async () => {
   await page.getByRole('link', { name: 'Create an account' }).click()
+  await page.getByRole('heading', { name: 'Create your account' }).waitFor()
   await page.getByLabel('Username').fill('ab')
   await page.getByLabel('Password', { exact: true }).fill('short')
   await page.getByLabel('Confirm password').fill('different')
@@ -226,7 +228,7 @@ await step('task detail from statistics', async () => {
 })
 
 await step('second tracker is independent; switching works', async () => {
-  await page.goto(`${BASE}/#/dashboard`)
+  await page.goto(`${BASE}/dashboard`)
   await page.getByRole('button', { name: 'New tracker' }).click()
   await page.getByLabel('Tracker name').fill('Vacation Routine')
   await page.getByRole('dialog').getByRole('button', { name: 'Create tracker' }).click()
@@ -259,12 +261,12 @@ await step('settings: 24h format + dark mode persist', async () => {
   await page.reload()
   await page.getByRole('radio', { name: '24-hour' }).and(page.locator('[aria-checked="true"]')).waitFor()
   assert.ok(await page.evaluate(() => document.documentElement.classList.contains('dark')))
-  await page.goto(`${BASE}/#/dashboard`)
+  await page.goto(`${BASE}/dashboard`)
   await page.getByRole('row', { name: /17:00/ }).waitFor()
   const firstDay = await page.getByRole('columnheader').nth(1).innerText()
   assert.match(firstDay, /MON/i)
   await page.screenshot({ path: `${SHOTS}/dashboard-dark-1440.png`, fullPage: true })
-  await page.goto(`${BASE}/#/settings`)
+  await page.goto(`${BASE}/settings`)
   await page.getByRole('radio', { name: 'Light' }).click()
   await page.getByRole('radio', { name: '12-hour' }).click()
   await page.getByRole('radio', { name: 'Sunday' }).click()
@@ -274,7 +276,7 @@ await step('settings: 24h format + dark mode persist', async () => {
 await step('logout, protected route blocked, login again', async () => {
   await page.getByRole('button', { name: 'Log out' }).click()
   await page.getByRole('heading', { name: 'Welcome back' }).waitFor()
-  await page.goto(`${BASE}/#/progress`)
+  await page.goto(`${BASE}/progress`)
   await page.getByRole('heading', { name: 'Welcome back' }).waitFor()
   await page.getByLabel('Username').fill(user)
   await page.getByLabel('Password', { exact: true }).fill('wrong-password')
@@ -299,7 +301,7 @@ for (const [w, h] of SIZES) {
   await step(`layout ${w}x${h}: no horizontal overflow on all pages`, async () => {
     await page.setViewportSize({ width: w, height: h })
     for (const route of ['dashboard', 'progress', 'settings']) {
-      await page.goto(`${BASE}/#/${route}`)
+      await page.goto(`${BASE}/${route}`)
       await page.getByRole('heading', { level: 1 }).first().waitFor()
       await page.waitForTimeout(500)
       await noOverflow(page, `${route} @${w}`)
@@ -310,7 +312,7 @@ for (const [w, h] of SIZES) {
 
 await step('mobile: day view, swipe, tick, bottom nav, modal fits', async () => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto(`${BASE}/#/dashboard`)
+  await page.goto(`${BASE}/dashboard`)
   await page.getByRole('tablist', { name: 'Day of week' }).waitFor()
   assert.equal(await page.getByRole('table').isVisible().catch(() => false), false, 'desktop table should be hidden')
   const card = page.getByRole('checkbox', { name: /Exercise/ }).first()
@@ -330,8 +332,9 @@ await step('mobile: day view, swipe, tick, bottom nav, modal fits', async () => 
 
 await step('settings: delete account removes access', async () => {
   await page.setViewportSize({ width: 1280, height: 800 })
-  await page.goto(`${BASE}/#/settings`)
+  await page.goto(`${BASE}/settings`)
   await page.getByRole('button', { name: 'Delete account' }).click()
+  await page.getByRole('dialog').getByLabel('Current Password').fill(pass)
   await page.getByLabel(/Type “/).fill(user)
   await page.getByRole('button', { name: 'Delete forever' }).click()
   await page.getByRole('heading', { name: 'Welcome back' }).waitFor({ timeout: 15000 })

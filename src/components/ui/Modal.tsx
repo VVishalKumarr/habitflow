@@ -16,6 +16,8 @@ interface ModalProps {
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 let openCount = 0
+/** Open dialogs, top-most last: Escape closes only the top one. */
+const escStack: symbol[] = []
 
 /** Accessible dialog: centered card on desktop, bottom sheet on phones. */
 export function Modal({ open, onClose, title, subtitle, children, footer, size = 'md' }: ModalProps) {
@@ -36,11 +38,18 @@ export function Modal({ open, onClose, title, subtitle, children, footer, size =
     const first = panel?.querySelector<HTMLElement>('input, textarea, select') ?? panel
     requestAnimationFrame(() => first?.focus({ preventScroll: true }))
 
+    // Escape works even before focus has moved into the dialog.
+    const me = Symbol('modal')
+    escStack.push(me)
+    const onEscape = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || escStack[escStack.length - 1] !== me) return
+      e.stopPropagation()
+      onCloseRef.current()
+    }
+    document.addEventListener('keydown', onEscape, true)
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation()
-        onCloseRef.current()
-      } else if (e.key === 'Tab' && panel) {
+      if (e.key === 'Tab' && panel) {
         const items = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE))
         if (items.length === 0) return
         const firstEl = items[0]
@@ -57,6 +66,8 @@ export function Modal({ open, onClose, title, subtitle, children, footer, size =
     panel?.addEventListener('keydown', onKey)
     return () => {
       panel?.removeEventListener('keydown', onKey)
+      document.removeEventListener('keydown', onEscape, true)
+      escStack.splice(escStack.indexOf(me), 1)
       removeBack()
       openCount--
       if (openCount === 0) document.body.style.overflow = ''

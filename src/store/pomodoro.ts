@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { create } from 'zustand'
+import { analytics } from '../lib/analytics'
 import { localDateOf } from '../lib/dates'
 import { usePomodoroSessions } from './pomodoroSessions'
 import { toast } from './ui'
@@ -114,6 +115,7 @@ export const usePomodoro = create<TimerState>((set, get) => {
   /** Saves a focus session that ran from startedAt for `focusMs`, ending at `endedAt`. */
   const save = (focusMs: number, endedAt: number, completed: boolean) => {
     const { label, settings, startedAt } = get()
+    analytics.track('focus_session_completed', { mode: completed ? 'full' : 'early' })
     const ended = new Date(endedAt).toISOString()
     usePomodoroSessions
       .getState()

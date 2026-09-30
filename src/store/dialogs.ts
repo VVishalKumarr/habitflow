@@ -1,4 +1,6 @@
 import { create } from 'zustand'
+import { useSubscriptionStore, useUpgrade } from './subscription'
+import { useTrackers } from './trackers'
 import type { ISODate } from '../lib/dates'
 import type { TimeSlot } from '../lib/types'
 
@@ -34,7 +36,15 @@ export const dialogs = {
   taskOptions: (taskId: string, date: ISODate) => useDialogs.getState().open({ kind: 'taskOptions', taskId, date }),
   addSlot: () => useDialogs.getState().open({ kind: 'slotForm', slot: null }),
   editSlot: (slot: TimeSlot) => useDialogs.getState().open({ kind: 'slotForm', slot }),
-  createTracker: () => useDialogs.getState().open({ kind: 'trackerForm', trackerId: null }),
+  createTracker: () => {
+    // Friendly early check; the database enforces the same limit on insert.
+    const max = useSubscriptionStore.getState().ent.limits.trackers
+    if (max != null && useTrackers.getState().trackers.length >= max) {
+      useUpgrade.getState().show('trackers')
+      return
+    }
+    useDialogs.getState().open({ kind: 'trackerForm', trackerId: null })
+  },
   renameTracker: (trackerId: string) => useDialogs.getState().open({ kind: 'trackerForm', trackerId }),
   deleteTracker: (trackerId: string) => useDialogs.getState().open({ kind: 'deleteTracker', trackerId }),
 }

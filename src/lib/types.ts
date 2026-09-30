@@ -2,6 +2,7 @@ export type Category = 'study' | 'exercise' | 'work' | 'personal' | 'other'
 export type TimeFormat = '12h' | '24h'
 export type Theme = 'light' | 'dark'
 export type WeekStart = 0 | 1
+export type AccentTheme = 'default' | 'ocean' | 'forest' | 'sunset' | 'midnight' | 'minimal'
 
 export interface Profile {
   id: string
@@ -11,6 +12,9 @@ export interface Profile {
   theme: Theme
   last_tracker_id: string | null
   created_at: string
+  accent_theme: AccentTheme
+  leaderboard_opt_in: boolean
+  share_progress: boolean
 }
 
 export interface Tracker {
@@ -80,6 +84,8 @@ export interface Friend {
   /** true when the other person sent the request */
   incoming: boolean
   created_at: string
+  /** accepted friends only: whether they share their daily totals */
+  shares_progress?: boolean
 }
 
 export interface CompareRow {

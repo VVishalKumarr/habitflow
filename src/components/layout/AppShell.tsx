@@ -1,10 +1,14 @@
-import { ChartNoAxesColumn, ChevronDown, LayoutDashboard, LogOut, Settings, Timer, Users } from 'lucide-react'
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { ChartNoAxesColumn, ChevronDown, CircleHelp, LayoutDashboard, LogOut, Settings, Sparkles, Timer, Users } from 'lucide-react'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { analytics } from '../../lib/analytics'
 import { useAuth } from '../../store/auth'
 import { useFriends } from '../../store/friends'
 import { formatClock, MODE_LABEL, usePomodoro, useRemaining } from '../../store/pomodoro'
+import { useSubscription } from '../../store/subscription'
+import { Assistant } from '../assistant/Assistant'
 import { Dropdown, MenuDivider, MenuItem } from '../ui/Dropdown'
 import { Logo } from './Logo'
+import { SiteFooter } from './SiteFooter'
 
 const NAV = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -50,9 +54,34 @@ function TimerPill() {
   )
 }
 
+/** Small "Upgrade" shortcut for free users; a Pro badge for Pro members. */
+function PlanBadge() {
+  const { isPro, loading, state } = useSubscription()
+  if (loading) return null
+  if (isPro) {
+    return (
+      <Link to="/pro" className="hidden h-8 items-center gap-1.5 rounded-full bg-brand-soft px-3 text-xs font-semibold text-brand-ink lg:flex">
+        <Sparkles className="size-3.5" aria-hidden="true" />
+        {state === 'TRIAL' ? 'Pro trial' : 'Pro'}
+      </Link>
+    )
+  }
+  return (
+    <Link
+      to="/pro"
+      onClick={() => analytics.track('upgrade_clicked', { source: 'header' })}
+      className="hidden h-9 items-center gap-1.5 rounded-xl border border-brand/40 px-3 text-sm font-semibold text-brand transition-colors hover:bg-brand-soft lg:flex"
+    >
+      <Sparkles className="size-4" aria-hidden="true" />
+      Upgrade
+    </Link>
+  )
+}
+
 function UserMenu() {
   const username = useAuth((s) => s.profile?.username ?? '')
   const signOut = useAuth((s) => s.signOut)
+  const { isPro } = useSubscription()
   const navigate = useNavigate()
 
   return (
@@ -71,7 +100,7 @@ function UserMenu() {
           <span className="flex size-8 items-center justify-center rounded-full bg-brand-soft text-sm font-semibold text-brand-ink uppercase">
             {username.slice(0, 1)}
           </span>
-          <span className="hidden max-w-32 truncate text-sm font-medium md:block">{username}</span>
+          <span className="hidden max-w-32 truncate text-sm font-medium xl:block">{username}</span>
           <ChevronDown className="size-4 text-muted" aria-hidden="true" />
           <span className="sr-only">Account menu</span>
         </button>
@@ -87,6 +116,13 @@ function UserMenu() {
           <MenuItem icon={<Settings />} onClick={() => (close(), navigate('/settings'))}>
             Settings
           </MenuItem>
+          <MenuItem icon={<Sparkles />} onClick={() => (close(), navigate('/pro'))}>
+            {isPro ? 'Your Pro plan' : 'Upgrade to Pro'}
+          </MenuItem>
+          <MenuItem icon={<CircleHelp />} onClick={() => (close(), navigate('/help'))}>
+            Help
+          </MenuItem>
+          <MenuDivider />
           <MenuItem icon={<LogOut />} danger onClick={() => (close(), signOut())}>
             Log out
           </MenuItem>
@@ -110,28 +146,38 @@ export function AppShell() {
               <NavLink
                 key={to}
                 to={to}
+                title={label}
                 className={({ isActive }) =>
-                  `flex h-10 items-center gap-2 rounded-xl px-3.5 text-sm font-medium transition-colors ${
+                  `flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-medium transition-colors lg:px-3.5 ${
                     isActive ? 'bg-brand-soft text-brand-ink' : 'text-muted hover:bg-subtle hover:text-ink'
                   }`
                 }
               >
                 <Icon className="size-[18px]" aria-hidden="true" />
-                {label}
+                {/* Tablets: icons only (the label stays for screen readers). */}
+                <span className="sr-only lg:not-sr-only">{label}</span>
                 {to === '/friends' && <Badge count={requests} />}
               </NavLink>
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-2">
             <TimerPill />
+            <PlanBadge />
             <UserMenu />
           </div>
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 pt-5 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-6 md:pt-8 md:pb-12 lg:px-8">
+      {/* Extra bottom padding keeps content clear of the tab bar and the assistant button. */}
+      <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 pt-5 pb-[calc(9rem+env(safe-area-inset-bottom))] sm:px-6 md:pt-8 md:pb-24 lg:px-8">
         <Outlet />
       </main>
+
+      <div className="mx-auto hidden w-full max-w-[1440px] px-4 pb-8 sm:px-6 md:block lg:px-8">
+        <SiteFooter compact />
+      </div>
+
+      <Assistant />
 
       <nav
         aria-label="Main"

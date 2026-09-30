@@ -1,0 +1,26 @@
+# Supabase CLI settings used when deploying Edge Functions.
+# JWT checks are done inside each function (the project uses the new
+# publishable API keys, which the gateway's legacy JWT check doesn't accept),
+# and the Razorpay webhook is authenticated by its HMAC signature instead.
+project_id = "udugejhizotqfmzqpnzf"
+
+[functions.account-email]
+verify_jwt = false
+
+[functions.password-reset]
+verify_jwt = false
+
+[functions.assistant]
+verify_jwt = false
+
+[functions.billing]
+verify_jwt = false
+
+[functions.razorpay-webhook]
+verify_jwt = false
+
+[functions.google-play-verify]
+verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = false

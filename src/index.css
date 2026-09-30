@@ -78,6 +78,68 @@
   color-scheme: dark;
 }
 
+/* Pro accent themes: only the brand colours change; everything else follows. */
+[data-accent='ocean'] {
+  --brand: #0a7299;
+  --brand-hover: #085e7e;
+  --brand-soft: #e2f3f9;
+  --brand-ink: #075a79;
+}
+[data-accent='forest'] {
+  --brand: #2f7d4f;
+  --brand-hover: #256640;
+  --brand-soft: #e3f3e9;
+  --brand-ink: #22603c;
+}
+[data-accent='sunset'] {
+  --brand: #c2410c;
+  --brand-hover: #a3370a;
+  --brand-soft: #fdeee6;
+  --brand-ink: #9a3412;
+}
+[data-accent='midnight'] {
+  --brand: #334a8f;
+  --brand-hover: #293c75;
+  --brand-soft: #e6eaf6;
+  --brand-ink: #26386e;
+}
+[data-accent='minimal'] {
+  --brand: #2f3441;
+  --brand-hover: #1f232d;
+  --brand-soft: #eceef2;
+  --brand-ink: #2f3441;
+}
+.dark[data-accent='ocean'] {
+  --brand: #2f8fb3;
+  --brand-hover: #45a1c3;
+  --brand-soft: #0f2e3a;
+  --brand-ink: #9adcf2;
+}
+.dark[data-accent='forest'] {
+  --brand: #3f9a68;
+  --brand-hover: #4fac78;
+  --brand-soft: #15301f;
+  --brand-ink: #a8e5c1;
+}
+.dark[data-accent='sunset'] {
+  --brand: #d0602b;
+  --brand-hover: #db7443;
+  --brand-soft: #3a2016;
+  --brand-ink: #fbc3a8;
+}
+.dark[data-accent='midnight'] {
+  --brand: #6680cc;
+  --brand-hover: #7890d6;
+  --brand-soft: #1b2340;
+  --brand-ink: #c3d0f7;
+}
+.dark[data-accent='minimal'] {
+  --brand: #7b8190;
+  --brand-hover: #8a90a0;
+  --brand-soft: #262a35;
+  --brand-ink: #e9ebf2;
+}
+
 @layer base {
   html {
     -webkit-tap-highlight-color: transparent;

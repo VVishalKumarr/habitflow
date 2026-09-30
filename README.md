@@ -27,9 +27,30 @@ One codebase ships as a website and as an Android app (Capacitor).
   today / this week / total, streaks, daily focus chart, time per task and session history
 - **Friends**: send requests by username, accept / decline, unfriend, and compare
   progress side by side (Pomodoro and timetable shown separately, 7/30/90 days)
+- **Public website**: landing page, pricing, Help articles, Privacy Policy, Terms, cookie settings
+- **Accounts**: optional recovery email (verified), forgot/reset password by email,
+  change username (same account), change password, password-protected account deletion
+- **Free & Pro plans** enforced by the database (tracker/friend/history limits, 7-day trial),
+  Razorpay checkout for the web, Google Play Billing architecture for Android
+- **Pro features**: colour themes, focus sounds, CSV and PDF reports, 90-day stats,
+  friend leaderboards (opt-in), no ads
+- **AI assistant** (Claude) with page-aware help and an offline fallback from the Help articles
+- Privacy-friendly analytics (Plausible/Umami), Sentry error tracking and AdSense —
+  all optional, consent-based and switched off until configured
 - Settings: light / dark theme, first day of week, 12/24-hour time, JSON export,
   account deletion
 - Android: back button closes dialogs → navigates → exits, safe areas, share-sheet export
+
+## Documentation
+
+| File | Covers |
+| --- | --- |
+| [SETUP.md](SETUP.md) | Running locally, Supabase, server functions, email, analytics, Sentry, AI, deploying, tests |
+| [DATABASE.md](DATABASE.md) | Tables, RLS, plans & limits, RPCs, future school/coaching design |
+| [SECURITY.md](SECURITY.md) | Auth, password recovery, payments verification, what is tested, limitations |
+| [MONETIZATION.md](MONETIZATION.md) | Plans, changing prices, Razorpay, Stripe/Lemon Squeezy, Google Play, ads, donations |
+| [PRIVACY_SETUP.md](PRIVACY_SETUP.md) | Legal details, disclosures, consent, launch checklist |
+| [PLAY_STORE_CHECKLIST.md](PLAY_STORE_CHECKLIST.md) | Android release: what’s done and what you must do |
 
 ## Tech stack
 
@@ -46,22 +67,27 @@ One codebase ships as a website and as an Android app (Capacitor).
 
 ```
 ├── src/
-│   ├── App.tsx                 routes, guards, Android back button
-│   ├── lib/                    supabase client, auth mapping, dates, time, stats engine, native helpers
-│   ├── store/                  zustand stores: auth, trackers, trackerData, dialogs, view, ui
+│   ├── App.tsx                 routes (public site, account flows, app), guards, Android back button
+│   ├── config/                 ONE place for settings: app, legal, analytics, ads, payments, ai, consent, features, sounds
+│   ├── content/                help articles (shared with the AI assistant)
+│   ├── lib/                    supabase, auth, dates, stats, analytics, monitoring (Sentry), exports, payments/, native
+│   ├── store/                  zustand: auth, trackers, trackerData, pomodoro, subscription, consent, friends, focusSound…
 │   ├── components/
-│   │   ├── layout/             AppShell (top nav, bottom tab bar, user menu), Logo
-│   │   ├── dashboard/          TrackerHeader/TrackerSelector, TodayProgressCard, TodayPanel, WeekNavigator
-│   │   ├── timetable/          Timetable (desktop grid), MobileDayView + MobileDaySelector, TaskChip/TaskCard, TaskCheck
-│   │   ├── modals/             TaskForm, TaskOptions, TimeSlot, TrackerForm, DialogHost
-│   │   ├── charts/             WeeklyChart, CompletionChart, DonutChart, TaskPerformance, TaskProgressChart
-│   │   └── ui/                 Modal, ConfirmModal, Dropdown, Field, Toaster, Spinner/Skeleton, EmptyState
-│   └── pages/                  Login, Register, Dashboard, Focus, Progress, Friends, Compare, Settings
-├── supabase/schema.sql         tables, indexes, triggers, RLS policies, delete_account(), friends functions
-├── supabase/migrations/        incremental SQL for existing projects
-├── tests/                      api-security.test.mjs, e2e.mjs
+│   │   ├── layout/             AppShell, PublicLayout, SiteFooter, Logo
+│   │   ├── assistant/          AI assistant panel
+│   │   ├── ads/ consent/       AdSlot, cookie banner + settings
+│   │   ├── subscription/ pricing/  UpgradeModal, plan cards
+│   │   ├── settings/ focus/    account dialogs, focus sounds
+│   │   ├── dashboard/ timetable/ modals/ charts/ progress/ ui/
+│   └── pages/                  Landing, Pro, Help, Privacy, Terms, Login, Register, Forgot/Reset password,
+│                               Verify email, Dashboard, Focus, Progress, Friends, Compare, Settings
+├── supabase/
+│   ├── schema.sql              full schema (idempotent)
+│   ├── migrations/             incremental SQL for existing projects
+│   └── functions/              Edge Functions: password-reset, account-email, assistant, billing,
+│                               razorpay-webhook, google-play-verify, delete-account
+├── tests/                      backend security suites + Playwright end-to-end suites
 ├── android/                    Capacitor Android project
-├── capacitor.config.ts
 └── .github/workflows/deploy.yml   GitHub Pages deployment
 ```
 
@@ -112,15 +138,20 @@ another user's tracker, slot or task, even through the raw API.
 - Passwords are hashed with bcrypt by Supabase Auth; they are never stored or logged by the app.
 - Sessions (JWT + refresh token) persist in local storage, so reopening the site/app keeps you
   logged in until you log out. Tokens refresh automatically.
-- Account deletion calls the `delete_account()` SQL function, which deletes the auth user;
-  all data cascades.
+- Account deletion (Settings) requires the current password; the `delete-account` server
+  function cancels any web subscription, then deletes the auth user; all data cascades.
+- Optional recovery email + password reset by email, username change and password change:
+  see [SECURITY.md](SECURITY.md).
 
 ## Tests
 
 ```bash
-node --env-file=.env tests/api-security.test.mjs   # auth + RLS: 15 checks incl. cross-user access
-npm run dev   # in another terminal
-node tests/e2e.mjs                                  # 30 Playwright UI checks at 7 viewport sizes
+node --env-file=.env tests/api-security.test.mjs      # auth + RLS, pomodoro, friends (22 checks)
+node --env-file=.env tests/launch-security.test.mjs   # plans, payments, account, privacy (22 checks)
+npm run dev   # in another terminal, then:
+BASE_URL=http://localhost:5173 node tests/e2e.mjs                         # core UI, 7 screen sizes
+BASE_URL=http://localhost:5173 node tests/e2e-social.mjs                  # focus timer + friends
+BASE_URL=http://localhost:5173 node --env-file=.env tests/e2e-launch.mjs  # launch features, 8 screen sizes
 ```
 
 (First run: `npx playwright install chromium`.)
@@ -129,8 +160,10 @@ node tests/e2e.mjs                                  # 30 Playwright UI checks at
 
 Pushing to `main` runs `.github/workflows/deploy.yml`, which builds with the repository
 **variables** `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` and publishes `dist/` to GitHub Pages.
-Any static host works: `npm run build` and upload `dist/` (the build uses relative paths and
-hash routing, so no server rewrites are needed).
+The site uses real paths (`/dashboard`, `/help/…`); old `#/…` links redirect automatically.
+Set `VITE_BASE_PATH` to the sub-path the site is served from (`/habitflow/` on GitHub Pages,
+`/` on a custom domain or in the Android app). `404.html` (GitHub Pages) and `public/_redirects`
+(Cloudflare Pages / Netlify) make deep links work. See [SETUP.md](SETUP.md#9-deploy-the-website).
 
 ## Android APK
 

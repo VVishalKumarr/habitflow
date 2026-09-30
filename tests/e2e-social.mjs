@@ -54,12 +54,12 @@ async function noOverflow(label) {
 console.log(`E2E (focus + friends) as ${me} on ${BASE}`)
 
 await step('register', async () => {
-  await page.goto(`${BASE}/#/register`)
+  await page.goto(`${BASE}/register`)
   await page.getByLabel('Username').fill(me)
   await page.getByLabel('Password', { exact: true }).fill(pass)
   await page.getByLabel('Confirm password').fill(pass)
   await page.getByRole('button', { name: 'Create account' }).click()
-  await page.waitForURL(/#\/dashboard/)
+  await page.waitForURL(/\/dashboard/)
 })
 
 await step('focus page requires a task name before starting', async () => {
@@ -108,7 +108,7 @@ await step('a finished focus session is saved and moves to a break', async () =>
 })
 
 await step('progress has separate Timetable and Pomodoro tabs', async () => {
-  await page.goto(`${BASE}/#/progress`)
+  await page.goto(`${BASE}/progress`)
   await page.getByRole('tab', { name: 'Timetable', selected: true }).waitFor()
   await page.getByRole('tab', { name: 'Pomodoro' }).click()
   await page.getByRole('heading', { name: 'Focus time' }).waitFor()
@@ -118,7 +118,7 @@ await step('progress has separate Timetable and Pomodoro tabs', async () => {
 })
 
 await step('friend request validation', async () => {
-  await page.goto(`${BASE}/#/friends`)
+  await page.goto(`${BASE}/friends`)
   await page.getByRole('heading', { name: 'Friends', exact: true }).waitFor()
   await page.getByLabel('Friend’s username').fill(me)
   await page.getByRole('button', { name: 'Send request' }).click()
@@ -164,13 +164,13 @@ await step('send request, friend accepts, compare', async () => {
 
 await step('phone layout: no horizontal overflow, 5 tabs', async () => {
   await page.setViewportSize({ width: 390, height: 844 })
-  for (const path of ['/focus', '/progress?view=pomodoro', '/friends', page.url().split('#')[1]]) {
+  for (const path of ['/focus', '/progress?view=pomodoro', '/friends', new URL(page.url()).pathname]) {
     await page.goto(`${BASE}/#${path}`)
     await page.waitForTimeout(800)
     if (path.startsWith('/friends/')) await page.screenshot({ path: `${SHOTS}/compare-390.png`, fullPage: true })
     await noOverflow(path)
   }
-  await page.goto(`${BASE}/#/focus`)
+  await page.goto(`${BASE}/focus`)
   await page.getByRole('timer').waitFor()
   await page.screenshot({ path: `${SHOTS}/focus-390.png`, fullPage: true })
   const tabs = await page.locator('nav[aria-label="Main"]').last().getByRole('link').count()
@@ -178,7 +178,7 @@ await step('phone layout: no horizontal overflow, 5 tabs', async () => {
 })
 
 await step('unfriend', async () => {
-  await page.goto(`${BASE}/#/friends`)
+  await page.goto(`${BASE}/friends`)
   await page.getByRole('button', { name: `Remove ${buddy}` }).click()
   await page.getByRole('dialog').getByRole('button', { name: 'Remove' }).click()
   await toast(`${buddy} removed.`)

@@ -24,6 +24,29 @@ export async function saveJsonFile(filename: string, data: unknown): Promise<voi
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
+/** Save any file (CSV, PDF…): browser download on the web, share sheet on Android. */
+export async function saveFile(filename: string, blob: Blob): Promise<void> {
+  if (isNative) {
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const r = new FileReader()
+      r.onload = () => resolve(String(r.result).split(',')[1] ?? '')
+      r.onerror = () => reject(r.error)
+      r.readAsDataURL(blob)
+    })
+    const { uri } = await Filesystem.writeFile({ path: filename, data: base64, directory: Directory.Cache })
+    await Share.share({ title: filename, url: uri, dialogTitle: 'Save or share' })
+    return
+  }
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
 /** Android hardware back: close overlays first, then go back, then exit from the home screen. */
 export function registerBackButton(handler: () => void) {
   if (!isNative) return () => {}

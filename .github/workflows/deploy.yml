@@ -26,8 +26,34 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
+          # GitHub Pages project site lives under /habitflow/. Use / for a custom domain.
+          VITE_BASE_PATH: ${{ vars.VITE_BASE_PATH || '/habitflow/' }}
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+          # Optional public settings (repository variables). Unset = feature off.
+          VITE_SITE_URL: ${{ vars.VITE_SITE_URL }}
+          VITE_SUPPORT_URL: ${{ vars.VITE_SUPPORT_URL }}
+          VITE_LEGAL_BUSINESS_NAME: ${{ vars.VITE_LEGAL_BUSINESS_NAME }}
+          VITE_LEGAL_CONTACT_EMAIL: ${{ vars.VITE_LEGAL_CONTACT_EMAIL }}
+          VITE_LEGAL_COUNTRY: ${{ vars.VITE_LEGAL_COUNTRY }}
+          VITE_LEGAL_EFFECTIVE_DATE: ${{ vars.VITE_LEGAL_EFFECTIVE_DATE }}
+          VITE_LEGAL_REVIEWED: ${{ vars.VITE_LEGAL_REVIEWED }}
+          VITE_LEGAL_DATA_REGION: ${{ vars.VITE_LEGAL_DATA_REGION }}
+          VITE_HOSTING_PROVIDER: ${{ vars.VITE_HOSTING_PROVIDER || 'GitHub Pages' }}
+          VITE_EMAIL_PROVIDER: ${{ vars.VITE_EMAIL_PROVIDER }}
+          VITE_ANALYTICS_PROVIDER: ${{ vars.VITE_ANALYTICS_PROVIDER }}
+          VITE_PLAUSIBLE_DOMAIN: ${{ vars.VITE_PLAUSIBLE_DOMAIN }}
+          VITE_UMAMI_URL: ${{ vars.VITE_UMAMI_URL }}
+          VITE_UMAMI_WEBSITE_ID: ${{ vars.VITE_UMAMI_WEBSITE_ID }}
+          VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
+          VITE_ADSENSE_CLIENT_ID: ${{ vars.VITE_ADSENSE_CLIENT_ID }}
+          VITE_ADSENSE_SLOT_PROGRESS: ${{ vars.VITE_ADSENSE_SLOT_PROGRESS }}
+          VITE_ADSENSE_SLOT_FRIENDS: ${{ vars.VITE_ADSENSE_SLOT_FRIENDS }}
+          VITE_ADSENSE_SLOT_HELP: ${{ vars.VITE_ADSENSE_SLOT_HELP }}
+          VITE_PAYMENT_PROVIDER: ${{ vars.VITE_PAYMENT_PROVIDER }}
+          VITE_RAZORPAY_KEY_ID: ${{ vars.VITE_RAZORPAY_KEY_ID }}
+          VITE_AI_PROVIDER: ${{ vars.VITE_AI_PROVIDER }}
+          VITE_CONSENT_MODE: ${{ vars.VITE_CONSENT_MODE }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

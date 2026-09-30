@@ -12,6 +12,7 @@ import { FocusChart } from '../charts/FocusChart'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { EmptyState } from '../ui/EmptyState'
 import { Skeleton } from '../ui/Spinner'
+import { RangeToggle } from '../charts/RangeToggle'
 
 function StatCard({ icon, label, value, detail }: { icon: ReactNode; label: string; value: string; detail?: string }) {
   return (
@@ -27,12 +28,6 @@ function StatCard({ icon, label, value, detail }: { icon: ReactNode; label: stri
     </div>
   )
 }
-
-const RANGES = [
-  { days: 7, label: '7D' },
-  { days: 30, label: '30D' },
-  { days: 90, label: '90D' },
-]
 
 const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`
 
@@ -130,21 +125,7 @@ export function PomodoroProgress() {
           title="Focus minutes"
           subtitle="Time spent focusing each day"
           action={
-            <div className="flex rounded-xl bg-subtle p-1" role="group" aria-label="Time range">
-              {RANGES.map((r) => (
-                <button
-                  key={r.days}
-                  type="button"
-                  onClick={() => setRange(r.days)}
-                  aria-pressed={range === r.days}
-                  className={`h-8 rounded-lg px-3 text-xs font-semibold transition-colors ${
-                    range === r.days ? 'bg-surface text-ink shadow-card' : 'text-muted hover:text-ink'
-                  }`}
-                >
-                  {r.label}
-                </button>
-              ))}
-            </div>
+            <RangeToggle value={range} onChange={setRange} />
           }
         >
           <FocusChart data={series} caption={`Focus minutes per day, last ${range} days`} />

@@ -15,7 +15,11 @@ interface AuthState {
   signIn: (username: string, password: string) => Promise<void>
   signUp: (username: string, password: string) => Promise<void>
   signOut: () => Promise<void>
-  updateProfile: (patch: Partial<Pick<Profile, 'week_start' | 'time_format' | 'theme' | 'last_tracker_id'>>) => Promise<void>
+  updateProfile: (
+    patch: Partial<Pick<Profile, 'week_start' | 'time_format' | 'theme' | 'last_tracker_id' | 'accent_theme' | 'leaderboard_opt_in' | 'share_progress'>>,
+  ) => Promise<void>
+  /** Local update after a server-side username change. */
+  setUsername: (username: string) => void
   deleteAccount: () => Promise<void>
 }
 
@@ -44,6 +48,21 @@ async function fetchProfile(userId: string): Promise<Profile> {
   return data as Profile
 }
 
+/** One profile request per user at a time (startup can trigger several loads at once). */
+let inflight: { userId: string; promise: Promise<Profile> } | null = null
+function fetchProfileOnce(userId: string): Promise<Profile> {
+  if (inflight?.userId !== userId) {
+    const promise = fetchProfile(userId).finally(() => {
+      if (inflight?.promise === promise) inflight = null
+    })
+    inflight = { userId, promise }
+  }
+  return inflight.promise
+}
+
+/** Bumped on every local profile change so a slower, older fetch can't overwrite it. */
+let profileVersion = 0
+
 export const useAuth = create<AuthState>((set, get) => ({
   status: 'loading',
   session: null,
@@ -61,7 +80,14 @@ export const useAuth = create<AuthState>((set, get) => ({
         return
       }
       try {
-        const profile = await fetchProfile(session.user.id)
+        const version = profileVersion
+        const profile = await fetchProfileOnce(session.user.id)
+        const current = get().profile
+        // Keep local edits made while this request was in flight.
+        if (current?.id === profile.id && version !== profileVersion) {
+          set({ status: 'authenticated', session })
+          return
+        }
         applyTheme(profile.theme)
         set({ status: 'authenticated', session, profile })
       } catch {
@@ -116,14 +142,24 @@ export const useAuth = create<AuthState>((set, get) => ({
   updateProfile: async (patch) => {
     const profile = get().profile
     if (!profile) return
+    profileVersion++
     set({ profile: { ...profile, ...patch } })
     if (patch.theme) applyTheme(patch.theme)
     const { error } = await supabase.from('profiles').update(patch).eq('id', profile.id)
     if (error) {
-      set({ profile })
+      // Undo only the fields this call changed.
+      const undo = Object.fromEntries(Object.keys(patch).map((k) => [k, profile[k as keyof Profile]]))
+      const now = get().profile
+      if (now) set({ profile: { ...now, ...undo } })
       if (patch.theme) applyTheme(profile.theme)
       throw new Error(friendlyError(error))
     }
+  },
+
+  setUsername: (username) => {
+    const profile = get().profile
+    profileVersion++
+    if (profile) set({ profile: { ...profile, username } })
   },
 
   deleteAccount: async () => {

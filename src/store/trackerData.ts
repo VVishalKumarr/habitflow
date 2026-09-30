@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { analytics } from '../lib/analytics'
 import { friendlyError } from '../lib/errors'
 import { supabase } from '../lib/supabase'
 import { sortSlots } from '../lib/time'
@@ -143,6 +144,7 @@ export const useTrackerData = create<TrackerDataState>((set, get) => ({
       .single()
     if (error) throw new Error(friendlyError(error))
     const task = data as Task
+    analytics.track('task_created')
     set({ tasks: [...get().tasks, task] })
     return task
   },
@@ -182,6 +184,7 @@ export const useTrackerData = create<TrackerDataState>((set, get) => ({
         { task_id: taskId, tracker_id: trackerId, completion_date: date, completed },
         { onConflict: 'task_id,completion_date' },
       )
+    if (!error) analytics.track(completed ? 'task_completed' : 'task_uncompleted')
     if (error && toggleSeq.get(key) === seq && get().trackerId === trackerId) {
       const next = { ...get().completions }
       if (previous === undefined) delete next[key]
