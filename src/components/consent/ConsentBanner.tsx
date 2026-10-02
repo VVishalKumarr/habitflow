@@ -81,7 +81,7 @@ export function CookieSettingsModal() {
         <Toggle
           id="c-ads"
           label="Advertising"
-          description={hasAds ? 'Google AdSense ads on a few pages (never on the timer or account pages). Pro members see no ads.' : 'Not used at the moment.'}
+          description={hasAds ? 'Google AdSense ads on a few pages (never on the timer or account pages). Paying members see no ads.' : 'Not used at the moment.'}
           checked={hasAds && draft.advertising}
           disabled={!hasAds}
           onChange={(v) => setDraft({ ...draft, advertising: v })}

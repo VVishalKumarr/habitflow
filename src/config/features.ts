@@ -39,13 +39,13 @@ export const FEATURE_LABELS: Record<Feature, string> = {
 
 /** Shown in the upgrade dialog when a feature is locked. */
 export const FEATURE_UPSELL: Partial<Record<Feature | LimitKey, string>> = {
-  trackers: 'You’ve reached the free tracker limit. Upgrade to Pro for unlimited trackers.',
-  friends: 'You’ve reached the free friend limit. Upgrade to Pro to add more friends.',
-  history_days: 'Longer history is a Pro feature.',
-  advanced_statistics: '90-day and all-time statistics are a Pro feature.',
+  trackers: 'You’ve reached the free tracker limit. Upgrade for unlimited trackers.',
+  friends: 'You’ve reached your plan’s friend limit. Upgrade to add more friends.',
+  history_days: 'Longer history needs a paid plan.',
+  advanced_statistics: '90-day and all-time statistics need a paid plan.',
   csv_export: 'PDF/CSV export is a Pro feature.',
   pdf_export: 'PDF/CSV export is a Pro feature.',
-  custom_themes: 'Custom themes are a Pro feature.',
+  custom_themes: 'Custom themes need a paid plan.',
   focus_sounds: 'Focus sounds are a Pro feature.',
   leaderboards: 'Leaderboards are a Pro feature.',
 }

@@ -21,7 +21,7 @@ const SUGGESTIONS: Record<string, string[]> = {
   '/focus': ['How does the Pomodoro timer work?', 'Can I change the timer length?'],
   '/friends': ['How do I add a friend?', 'What can my friends see?'],
   '/settings': ['How do I change my username?', 'How do I add a recovery email?'],
-  '/pro': ['What does Pro include?', 'How do I upgrade to Pro?'],
+  '/pro': ['What’s the difference between Plus and Pro?', 'How do I upgrade?'],
 }
 
 function suggestionsFor(path: string) {

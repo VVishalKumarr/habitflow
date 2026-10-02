@@ -110,7 +110,7 @@ function FriendLimitNote({ used }: { used: number }) {
       {Math.min(used, max)} of {max} friends (including sent requests).{' '}
       {used >= max && (
         <Link to="/pro" className="font-medium text-brand hover:underline">
-          Get more with Pro
+          Get more with Plus or Pro
         </Link>
       )}
     </p>

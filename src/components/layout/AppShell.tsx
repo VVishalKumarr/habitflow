@@ -54,15 +54,15 @@ function TimerPill() {
   )
 }
 
-/** Small "Upgrade" shortcut for free users; a Pro badge for Pro members. */
+/** Small "Upgrade" shortcut for free users; a plan badge (Plus / Pro) for paying members. */
 function PlanBadge() {
-  const { isPro, loading, state } = useSubscription()
+  const { isPaid, loading, state, plan_name } = useSubscription()
   if (loading) return null
-  if (isPro) {
+  if (isPaid) {
     return (
       <Link to="/pro" className="hidden h-8 items-center gap-1.5 rounded-full bg-brand-soft px-3 text-xs font-semibold text-brand-ink lg:flex">
         <Sparkles className="size-3.5" aria-hidden="true" />
-        {state === 'TRIAL' ? 'Pro trial' : 'Pro'}
+        {state === 'TRIAL' ? `${plan_name} trial` : plan_name}
       </Link>
     )
   }
@@ -81,7 +81,7 @@ function PlanBadge() {
 function UserMenu() {
   const username = useAuth((s) => s.profile?.username ?? '')
   const signOut = useAuth((s) => s.signOut)
-  const { isPro } = useSubscription()
+  const { isPaid, plan_name } = useSubscription()
   const navigate = useNavigate()
 
   return (
@@ -117,7 +117,7 @@ function UserMenu() {
             Settings
           </MenuItem>
           <MenuItem icon={<Sparkles />} onClick={() => (close(), navigate('/pro'))}>
-            {isPro ? 'Your Pro plan' : 'Upgrade to Pro'}
+            {isPaid ? `Your ${plan_name} plan` : 'Upgrade'}
           </MenuItem>
           <MenuItem icon={<CircleHelp />} onClick={() => (close(), navigate('/help'))}>
             Help

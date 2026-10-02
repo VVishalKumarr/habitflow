@@ -215,7 +215,7 @@ export default function SettingsPage() {
     <span className="text-sm text-muted">Not set — password recovery is unavailable.</span>
   )
 
-  const planLabel = sub.state === 'TRIAL' ? 'Pro trial' : sub.state === 'PRO' ? 'Pro' : sub.state === 'EXPIRED' ? 'Free (Pro ended)' : 'Free'
+  const planLabel = sub.state === 'TRIAL' ? `${sub.plan_name} trial` : sub.state === 'EXPIRED' ? 'Free (paid plan ended)' : sub.plan_name
   const themesOk = hasFeature('custom_themes')
 
   return (
@@ -281,23 +281,23 @@ export default function SettingsPage() {
         <Row
           label={planLabel}
           hint={
-            sub.isPro && sub.expires_at
+            sub.isPaid && sub.expires_at
               ? `${sub.cancel_at_period_end || sub.state === 'TRIAL' ? 'Ends' : 'Renews'} on ${formatDate(sub.expires_at.slice(0, 10), { month: 'long', day: 'numeric', year: 'numeric' })}`
-              : sub.isPro
-                ? 'All Pro features are unlocked.'
-                : 'Upgrade for unlimited trackers, full history, reports, themes and more.'
+              : sub.isPaid
+                ? `All ${sub.plan_name} features are unlocked.`
+                : 'Upgrade to remove ads and limits, or get Pro for reports, focus sounds and more.'
           }
         >
           <button
             type="button"
-            className={sub.isPro ? 'btn-secondary' : 'btn-primary'}
+            className={sub.isPaid ? 'btn-secondary' : 'btn-primary'}
             onClick={() => {
-              if (!sub.isPro) analytics.track('upgrade_clicked', { source: 'settings' })
+              if (!sub.isPaid) analytics.track('upgrade_clicked', { source: 'settings' })
               navigate('/pro')
             }}
           >
             <Sparkles className="size-4" aria-hidden="true" />
-            {sub.isPro ? 'Manage' : 'See Pro'}
+            {sub.isPaid ? 'Manage plan' : 'See plans'}
           </button>
         </Row>
       </Section>
@@ -317,7 +317,7 @@ export default function SettingsPage() {
         <div>
           <p className="flex items-center gap-2 text-[15px] font-medium">
             Colour theme
-            {!themesOk && <span className="rounded-full bg-brand-soft px-2 py-0.5 text-xs font-semibold text-brand-ink">Pro</span>}
+            {!themesOk && <span className="rounded-full bg-brand-soft px-2 py-0.5 text-xs font-semibold text-brand-ink">Plus</span>}
           </p>
           <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6" role="radiogroup" aria-label="Colour theme">
             {ACCENTS.map((a) => {
@@ -338,7 +338,7 @@ export default function SettingsPage() {
                     {locked && <Lock className="size-3.5 text-white" aria-hidden="true" />}
                   </span>
                   {a.label}
-                  {locked && <span className="sr-only"> (Pro)</span>}
+                  {locked && <span className="sr-only"> (Plus)</span>}
                 </button>
               )
             })}

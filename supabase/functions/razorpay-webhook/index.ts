@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
   const admin = adminClient()
   const { data: row } = await admin
     .from('subscriptions')
-    .select('id, user_id')
+    .select('id, user_id, plan')
     .eq('provider', 'razorpay')
     .eq('provider_subscription_id', sub.id)
     .maybeSingle()
@@ -46,7 +46,8 @@ Deno.serve(async (req) => {
     user_id: userId,
     provider: 'razorpay',
     provider_subscription_id: sub.id,
-    plan: 'pro',
+    // the plan chosen at checkout (stored on our row, and in the Razorpay notes)
+    plan: row?.plan ?? sub.notes?.plan ?? 'pro',
     status: mapStatus(sub.status),
     started_at: toIso(sub.current_start ?? sub.start_at),
     expires_at: toIso(sub.current_end ?? sub.ended_at),

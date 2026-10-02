@@ -22,7 +22,7 @@ export function planError(msg: string): { key: Feature | LimitKey; message: stri
   const limit = /PLAN_LIMIT:(\w+)/.exec(msg)
   if (limit) return { key: limit[1] as LimitKey, message: LIMIT_TEXT[limit[1]] ?? 'You’ve reached a free plan limit.' }
   const pro = /PRO_REQUIRED:(\w+)/.exec(msg)
-  if (pro) return { key: pro[1] as Feature, message: 'This feature is available with HabitFlow Pro.' }
+  if (pro) return { key: pro[1] as Feature, message: 'This feature needs a paid plan.' }
   return null
 }
 

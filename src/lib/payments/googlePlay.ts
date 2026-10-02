@@ -19,7 +19,7 @@ import type { PaymentProvider } from './index'
 export function googlePlayProvider(): PaymentProvider {
   return {
     id: 'google_play',
-    unavailableReason: 'Upgrading inside the Android app isn’t available yet. If you already have Pro, it works here too.',
+    unavailableReason: 'Upgrading inside the Android app isn’t available yet. If you already have a paid plan, it works here too.',
     checkout: async () => {
       throw new Error('Google Play Billing is not connected yet.')
     },

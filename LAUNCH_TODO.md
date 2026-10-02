@@ -6,7 +6,7 @@ Tick them off as you go. Details are in the linked docs.
 ## Soon
 - [ ] Delete the Supabase access token (supabase.com → Account → Access Tokens) and remove the
       `SUPABASE_ACCESS_TOKEN` line from `.env`. Create a new one when you next need database changes.
-- [ ] Decide final prices (currently ₹99/month, ₹799/year placeholders) — [MONETIZATION.md](MONETIZATION.md#changing-prices-and-limits)
+- [ ] Decide final prices for Plus and Pro, in India and internationally (placeholders: Plus ₹49/$1.99, Pro ₹99/$3.99 a month) — [MONETIZATION.md](MONETIZATION.md#changing-prices-and-limits)
 
 ## Before telling the public
 - [ ] Buy a domain and move hosting to Cloudflare Pages (GitHub Pages doesn’t allow commercial sites) — [SETUP.md §9](SETUP.md#9-deploy-the-website)
@@ -15,7 +15,8 @@ Tick them off as you go. Details are in the linked docs.
 - [ ] Turn on Supabase leaked-password protection and CAPTCHA for sign-ups — [SECURITY.md](SECURITY.md#known-limitations--to-do)
 
 ## To earn money
-- [ ] Razorpay account (KYC), create monthly/yearly plans, keys + webhook; test with test keys first — [MONETIZATION.md](MONETIZATION.md#web-payments-razorpay-india)
+- [ ] Razorpay account (KYC), create monthly/yearly plans for Plus and Pro, keys + webhook; test with test keys first — [MONETIZATION.md](MONETIZATION.md#web-payments-razorpay-india)
+- [ ] International payments: Lemon Squeezy or Paddle account (so people outside India can buy Plus/Pro); ask me to connect it
 - [ ] AdSense application (needs the domain) + ad units + `ads.txt` — [MONETIZATION.md](MONETIZATION.md#ads)
 - [ ] Donation link (`VITE_SUPPORT_URL`) — optional
 
@@ -25,6 +26,24 @@ Tick them off as you go. Details are in the linked docs.
 - [ ] Error tracking: Sentry DSN — [SETUP.md §6](SETUP.md#6-sentry-errors)
 - [ ] Forest / café focus sounds: licensed audio files
 
-## Android / Play Store
+## Google Play Store (Android)
+The Android app is already built; these steps get it onto the Play Store. Full list: [PLAY_STORE_CHECKLIST.md](PLAY_STORE_CHECKLIST.md)
 - [ ] Install the new APK on your phone and test it
-- [ ] Everything in [PLAY_STORE_CHECKLIST.md](PLAY_STORE_CHECKLIST.md) (developer account, keystore, listing, Data safety, Play Billing, AdMob)
+- [ ] Google Play Console developer account (one-time US$25) and identity verification
+- [ ] Create a release keystore, back it up, and build the signed app bundle (`.aab`)
+- [ ] Store listing: description, icon, feature graphic, screenshots
+- [ ] Privacy policy URL, account-deletion URL, Data safety form, content rating
+- [ ] Closed test with testers for 14 days (required for new personal accounts), then production
+- [ ] Pro in the app: subscription product + Play Billing plugin + service account secrets
+- [ ] Optional: AdMob ads
+
+## Apple App Store (iOS)
+Not started: there is no iPhone version of the app yet. The same code can become one with Capacitor.
+- [ ] Get access to a Mac with Xcode (Apple only allows building iPhone apps on a Mac)
+- [ ] Apple Developer Program membership (US$99 a year)
+- [ ] Add the iOS app to the project (`npx cap add ios`) and test it on an iPhone
+- [ ] Pro on iPhone must use Apple In-App Purchase (StoreKit) for digital subscriptions; add a server function to verify Apple purchases, like the Google Play one
+- [ ] App Store listing: description, screenshots for required iPhone sizes, privacy policy URL, support URL
+- [ ] App Privacy “nutrition label” answers that match the Privacy Policy
+- [ ] In-app account deletion (already built) and a way to restore purchases
+- [ ] TestFlight beta with friends, then submit for App Review

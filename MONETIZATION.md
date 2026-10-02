@@ -5,49 +5,68 @@ Nothing here charges anyone until you configure a provider.
 
 ## Plans
 
-| | Free | Pro |
-| --- | --- | --- |
-| Trackers | 2 | unlimited |
-| Detailed history / charts | 30 days | full, 90-day views |
-| Friends (incl. sent requests) | 3 | 50 |
-| Colour themes, focus sounds, CSV/PDF reports, leaderboards | — | ✓ |
-| Ads | yes (with consent) | none |
-| Price | ₹0 | ₹99/month or ₹799/year (placeholders) |
-| Free trial | — | 7 days, once per account |
+| | Free | Plus | Pro |
+| --- | --- | --- | --- |
+| Trackers | 2 | unlimited | unlimited |
+| Detailed history / charts | 30 days | full, 90-day views | full, 90-day views |
+| Friends (incl. sent requests) | 3 | 10 | 50 |
+| Colour themes, no ads | — | ✓ | ✓ |
+| Focus sounds, CSV/PDF reports, leaderboards | — | — | ✓ |
+| Price in India | ₹0 | ₹49/mo · ₹399/yr | ₹99/mo · ₹799/yr |
+| Price elsewhere | $0 | $1.99/mo · $14.99/yr | $3.99/mo · $29.99/yr |
+| Free trial | — | — | 7 days, once per account |
+
+Prices are placeholders. The middle plan makes Pro look like the better deal.
+A user is entitled to the highest-ranked plan with an active subscription.
+
+## Regional prices
+
+Each plan has `prices` per region in the smallest currency unit
+(`{"IN": {"currency": "INR", "monthly": 4900, "yearly": 39900}, "default": {"currency": "USD", ...}}`).
+`default` applies to every region without its own entry. The website picks the region
+from the device time zone (India → `IN`) and visitors can switch on the pricing page
+(`src/lib/region.ts`). Google Play and the App Store set local prices themselves.
+
+Web checkout today: **Indian prices via Razorpay**. Other regions show “coming soon”
+until an international provider (Lemon Squeezy or Paddle) is connected. A visitor could
+switch to Indian prices, but would then pay in rupees through Razorpay.
 
 ## Changing prices and limits
 
-Everything lives in the `plans` table (prices in paise). Examples (SQL Editor):
+Everything lives in the `plans` table. Examples (SQL Editor):
 
 ```sql
--- prices
-update public.plans set price_monthly = 14900, price_yearly = 119900 where id = 'pro';
--- free tracker limit 3, Pro friends unlimited
+-- Plus in India: ₹59/month
+update public.plans set prices = jsonb_set(prices, '{IN,monthly}', '5900') where id = 'plus';
+-- Pro outside India: $4.99/month, $34.99/year
+update public.plans set prices = jsonb_set(jsonb_set(prices, '{default,monthly}', '499'), '{default,yearly}', '3499') where id = 'pro';
+-- free tracker limit 3; Pro friends unlimited
 update public.plans set limits = jsonb_set(limits, '{trackers}', '3') where id = 'free';
 update public.plans set limits = jsonb_set(limits, '{friends}', 'null') where id = 'pro';
 -- trial length (0 = no trial)
 update public.plans set trial_days = 14 where id = 'pro';
--- add/remove a Pro feature
-update public.plans set features = array_remove(features, 'focus_sounds') where id = 'pro';
+-- move a feature from Pro to Plus
+update public.plans set features = array_append(features, 'focus_sounds') where id = 'plus';
 ```
 
 The pricing page, limits and checks update immediately; no redeploy needed. Feature
 labels are in `src/config/features.ts`. If you change a price, create the matching new
-plan in Razorpay/Play too (next sections).
+plan in Razorpay/Play too. (`price_monthly`/`price_yearly` columns are legacy; `prices` is used.)
 
 ## Subscription states
 
-`FREE` (never paid) · `TRIAL` · `PRO` · `EXPIRED` (had Pro, now free). Computed by
-`my_entitlements()` from the `subscriptions` table. Cancelling keeps Pro until
-`expires_at`. Losing Pro never deletes data.
+`FREE` (never paid) · `TRIAL` · `ACTIVE` (on Plus or Pro) · `EXPIRED` (had a paid plan, now free).
+Computed by `my_entitlements()` from the `subscriptions` table. Cancelling keeps the plan until
+`expires_at`. Losing a plan never deletes data. Upgrading Plus → Pro on the web stops the Plus renewal.
 
 ## Web payments: Razorpay (India)
 
 1. Create a Razorpay account and complete KYC.
-2. Dashboard → Subscriptions → **Plans**: create a monthly and a yearly plan with your
-   prices. Copy their `plan_…` ids into the database:
+2. Dashboard → Subscriptions → **Plans**: create a monthly and a yearly plan for **Plus and
+   for Pro** (four in total) at your Indian prices. Copy their `plan_…` ids into the database:
    ```sql
-   update public.plans set razorpay_plan_monthly = 'plan_xxx', razorpay_plan_yearly = 'plan_yyy' where id = 'pro';
+   update public.plans set razorpay_plan_monthly = 'plan_a', razorpay_plan_yearly = 'plan_b' where id = 'plus';
+   update public.plans set razorpay_plan_monthly = 'plan_c', razorpay_plan_yearly = 'plan_d' where id = 'pro';
    ```
 3. Settings → API Keys: generate keys.
    - Server secrets: `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`

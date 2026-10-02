@@ -55,7 +55,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: 'How many trackers can I have?',
         body: [
-          'The Free plan includes a limited number of trackers (shown on the Pro page). Pro removes the limit. If you reach the limit, your existing trackers stay exactly as they are — you just can’t add another until you upgrade or delete one.',
+          'The Free plan includes a limited number of trackers (shown on the pricing page). Plus and Pro remove the limit. If you reach the limit, your existing trackers stay exactly as they are — you just can’t add another until you upgrade or delete one.',
         ],
       },
     ],
@@ -214,7 +214,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         body: [
           '1. Open Settings → Account.',
           '2. Choose “Change username”, enter the new name and your current password.',
-          'It’s the same account: your trackers, history, friends and Pro plan stay exactly as they are. Use the new username the next time you log in.',
+          'It’s the same account: your trackers, history, friends and plan stay exactly as they are. Use the new username the next time you log in.',
         ],
       },
       {
@@ -267,32 +267,31 @@ export const HELP_ARTICLES: HelpArticle[] = [
   },
   {
     slug: 'habitflow-pro',
-    title: 'HabitFlow Pro',
-    description: 'What Pro includes, how to upgrade and how to cancel.',
-    keywords: ['pro', 'upgrade', 'price', 'pricing', 'subscription', 'cancel', 'trial', 'export', 'csv', 'pdf', 'themes', 'ads'],
+    title: 'Plans: Free, Plus and Pro',
+    description: 'What each plan includes, how to upgrade and how to cancel.',
+    keywords: ['pro', 'plus', 'upgrade', 'price', 'pricing', 'plan', 'plans', 'subscription', 'cancel', 'trial', 'export', 'csv', 'pdf', 'themes', 'ads'],
     route: '/pro',
     public: true,
     sections: [
       {
-        heading: 'What Pro adds',
+        heading: 'The three plans',
         body: [
-          '- Unlimited trackers and full history',
-          '- 90-day and all-time statistics, CSV and PDF reports',
-          '- Custom colour themes and focus sounds',
-          '- More friends and weekly leaderboards',
-          '- No advertisements',
+          '- Free: 2 trackers, 30-day charts, the focus timer and up to 3 friends. Includes some ads.',
+          '- Plus: no ads, unlimited trackers, full history and 90-day charts, colour themes and up to 10 friends.',
+          '- Pro: everything in Plus, plus PDF and CSV reports, focus sounds, weekly leaderboards and up to 50 friends. Pro has a free trial.',
+          'Prices are shown on the pricing page and depend on your region.',
         ],
       },
       {
         heading: 'How to upgrade',
         body: [
-          'Open the Pro page from the menu and choose monthly or yearly. Payment is handled by our payment provider; your Pro features switch on once the payment is confirmed. In the Android app, Pro is purchased through Google Play.',
+          'Open the pricing page from the menu (“Upgrade”), choose monthly or yearly, and pick Plus or Pro. Payment is handled by our payment provider; your features switch on once the payment is confirmed. In the Android app, plans are bought through Google Play. You can switch from Plus to Pro at any time.',
         ],
       },
       {
-        heading: 'If Pro ends',
+        heading: 'If your plan ends',
         body: [
-          'Nothing is deleted. You keep all trackers and history; free-plan limits simply apply to new items again.',
+          'Nothing is deleted. You keep all trackers and history; the free limits simply apply to new items again.',
         ],
       },
     ],

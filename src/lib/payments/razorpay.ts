@@ -34,10 +34,11 @@ export function razorpayProvider(): PaymentProvider {
   return {
     id: 'razorpay',
     unavailableReason: null,
-    async checkout(interval: BillingInterval, ctx): Promise<CheckoutResult> {
+    async checkout(plan: string, interval: BillingInterval, ctx): Promise<CheckoutResult> {
       await loadCheckout()
       const { subscription_id, key_id } = await callFunction<{ subscription_id: string; key_id: string }>('billing', {
         action: 'create',
+        plan,
         interval,
       })
       return new Promise((resolve, reject) => {
@@ -45,7 +46,7 @@ export function razorpayProvider(): PaymentProvider {
           key: key_id,
           subscription_id,
           name: appConfig.name,
-          description: `${appConfig.name} Pro (${interval})`,
+          description: `${appConfig.name} ${plan.charAt(0).toUpperCase() + plan.slice(1)} (${interval})`,
           notes: { username: ctx.username },
           theme: { color: '#5750e0' },
           handler: async (res: RazorpayResponse) => {

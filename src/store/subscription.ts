@@ -1,13 +1,21 @@
 import { create } from 'zustand'
 import { FEATURE_UPSELL, type Feature, type LimitKey } from '../config'
+import type { RegionPrice } from '../config/pricing'
 import { friendlyError, setPlanErrorHandler } from '../lib/errors'
 import { supabase } from '../lib/supabase'
 
-export type PlanState = 'FREE' | 'PRO' | 'TRIAL' | 'EXPIRED'
+/** FREE: never paid · TRIAL · ACTIVE: on a paid plan · EXPIRED: had a paid plan, now free */
+export type PlanState = 'FREE' | 'TRIAL' | 'ACTIVE' | 'EXPIRED'
+
+/** 'free' | 'plus' | 'pro' (more can be added in the database) */
+export type PlanId = string
 
 /** What the server says this user may do (see my_entitlements() in the database). */
 export interface Entitlements {
-  plan: 'free' | 'pro'
+  plan: PlanId
+  plan_name: string
+  /** 0 = free; higher = more features */
+  rank: number
   state: PlanState
   provider: string | null
   status: string | null
@@ -19,12 +27,11 @@ export interface Entitlements {
 }
 
 export interface Plan {
-  id: 'free' | 'pro'
+  id: PlanId
   name: string
-  currency: string
-  /** smallest currency unit (paise) */
-  price_monthly: number
-  price_yearly: number
+  rank: number
+  /** per region ('IN', 'default'…), smallest currency unit */
+  prices: Partial<Record<string, RegionPrice>>
   trial_days: number
   limits: Partial<Record<LimitKey, number | null>>
   features: Feature[]
@@ -36,6 +43,8 @@ export interface Plan {
 /** Used until the server answers, and if it can't be reached: most restrictive. */
 const FREE_FALLBACK: Entitlements = {
   plan: 'free',
+  plan_name: 'Free',
+  rank: 0,
   state: 'FREE',
   provider: null,
   status: null,
@@ -75,9 +84,9 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
     set({ plansStatus: 'loading' })
     const { data, error } = await supabase
       .from('plans')
-      .select('id, name, currency, price_monthly, price_yearly, trial_days, limits, features, razorpay_plan_monthly, razorpay_plan_yearly, google_play_product_id')
+      .select('id, name, rank, prices, trial_days, limits, features, razorpay_plan_monthly, razorpay_plan_yearly, google_play_product_id')
     if (error) set({ plansStatus: 'error' })
-    else set({ plansStatus: 'ready', plans: (data as Plan[]).sort((a) => (a.id === 'free' ? -1 : 1)) })
+    else set({ plansStatus: 'ready', plans: (data as Plan[]).sort((a, b) => a.rank - b.rank) })
   },
 
   startTrial: async () => {
@@ -89,10 +98,10 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   reset: () => set({ status: 'idle', ent: FREE_FALLBACK }),
 }))
 
-export function useSubscription(): Entitlements & { loading: boolean; isPro: boolean } {
+export function useSubscription(): Entitlements & { loading: boolean; isPaid: boolean } {
   const ent = useSubscriptionStore((s) => s.ent)
   const status = useSubscriptionStore((s) => s.status)
-  return { ...ent, loading: status === 'idle' || status === 'loading', isPro: ent.plan === 'pro' }
+  return { ...ent, loading: status === 'idle' || status === 'loading', isPaid: ent.plan !== 'free' }
 }
 
 /* ------------------------------------------------------------------ */
@@ -102,6 +111,8 @@ export function useSubscription(): Entitlements & { loading: boolean; isPro: boo
 interface UpgradeState {
   open: boolean
   message: string
+  /** the feature or limit that triggered the dialog */
+  key: Feature | LimitKey | null
   show: (key?: Feature | LimitKey, message?: string) => void
   close: () => void
 }
@@ -109,8 +120,9 @@ interface UpgradeState {
 export const useUpgrade = create<UpgradeState>((set) => ({
   open: false,
   message: '',
+  key: null,
   show: (key, message) =>
-    set({ open: true, message: message ?? (key && FEATURE_UPSELL[key]) ?? 'This feature is available with HabitFlow Pro.' }),
+    set({ open: true, key: key ?? null, message: message ?? (key && FEATURE_UPSELL[key]) ?? 'This feature is available on a paid plan.' }),
   close: () => set({ open: false }),
 }))
 

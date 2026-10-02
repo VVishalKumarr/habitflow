@@ -93,7 +93,7 @@ export function PrivacyPage() {
         <ul>
           <li>To provide the service: save your timetable, show your progress, sync between devices.</li>
           <li>To secure your account: log in, password recovery (only if you added a recovery email), rate-limiting abuse.</li>
-          <li>To provide Pro features you paid for and enforce plan limits.</li>
+          <li>To provide the paid-plan features you bought and enforce plan limits.</li>
           <li>To show friends the totals you choose to share (see Friends).</li>
           <li>To fix problems and improve the app{analyticsName ? ', using anonymous statistics if you allow them' : ''}.</li>
         </ul>
@@ -136,7 +136,7 @@ export function PrivacyPage() {
           )}
           {ads && (
             <li>
-              <strong>Google AdSense</strong> — ads on some public and progress pages, only with your consent and never for Pro members.
+              <strong>Google AdSense</strong> — ads on some public and progress pages, only with your consent and never for paying members.
             </li>
           )}
           {payments && (
@@ -161,7 +161,7 @@ export function PrivacyPage() {
         <section>
           <h2>AI assistant</h2>
           <p>
-            When you ask the assistant a question, we send your question, the conversation so far, the page you’re on and whether you’re on the Free or Pro plan to {ai} to generate an
+            When you ask the assistant a question, we send your question, the conversation so far, the page you’re on and which plan you’re on (Free, Plus or Pro) to {ai} to generate an
             answer. We don’t send your tasks, statistics, email, password or payment details. Please don’t type personal information into the assistant.
           </p>
         </section>
@@ -196,7 +196,7 @@ export function PrivacyPage() {
           <h2>Advertising</h2>
           <p>
             With your consent, Google AdSense may show ads on some pages and may use cookies to do so. Ads never appear on the focus timer, when ticking off tasks or on account and
-            password pages, and Pro members see no ads. Learn more in{' '}
+            password pages, and paying members (Plus and Pro) see no ads. Learn more in{' '}
             <a href="https://policies.google.com/technologies/ads" className="text-brand underline" target="_blank" rel="noopener noreferrer">
               Google’s advertising policies
             </a>
@@ -318,9 +318,9 @@ export function TermsPage() {
         </p>
       </section>
       <section>
-        <h2>6. Free and Pro Features</h2>
+        <h2>6. Free and Paid Plans</h2>
         <p>
-          The free plan is free of charge and has limits shown on the Pricing page. Pro is an optional paid subscription with additional features. We may change features and limits
+          The free plan is free of charge and has limits shown on the Pricing page. Plus and Pro are optional paid subscriptions with additional features, and prices may differ by region. We may change features and limits
           over time; if a limit is reduced we won’t delete content you already created.
         </p>
       </section>
@@ -335,7 +335,7 @@ export function TermsPage() {
         <h2>8. Payments</h2>
         <p>
           Payments are processed by third-party payment providers (on the website) or Google Play (in the Android app), under their terms. Prices may include or exclude taxes as
-          shown at checkout. If a renewal payment fails, Pro features may stop until payment succeeds.
+          shown at checkout. If a renewal payment fails, paid features may stop until payment succeeds.
         </p>
       </section>
       <section>
@@ -355,7 +355,7 @@ export function TermsPage() {
       <section>
         <h2>11. Advertising</h2>
         <p>
-          The free plan may show a limited number of ads on some pages, only with your consent where required. Pro members don’t see ads. We are not responsible for the content of
+          The free plan may show a limited number of ads on some pages, only with your consent where required. Paying members (Plus and Pro) don’t see ads. We are not responsible for the content of
           third-party ads.
         </p>
       </section>

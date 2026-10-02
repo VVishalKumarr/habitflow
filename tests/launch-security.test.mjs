@@ -65,8 +65,10 @@ const users = [alice, bob, carol]
 
 // ---------------------------------------------------------------- plans
 await test('plans are public, read-only', async () => {
-  const { data } = await client().from('plans').select('id, price_monthly, limits')
-  assert.equal(data.length, 2)
+  const { data } = await client().from('plans').select('id, prices, limits').order('rank')
+  assert.deepEqual(data.map((p) => p.id), ['free', 'plus', 'pro'])
+  assert.equal(data[1].prices.IN.currency, 'INR')
+  assert.equal(data[1].prices.default.currency, 'USD')
   const r = await alice.c.from('plans').update({ price_monthly: 1 }).eq('id', 'pro').select()
   assert.ok(r.error || r.data.length === 0, 'users must not change prices')
 })
@@ -129,6 +131,7 @@ await test('trial: one per account, unlocks Pro, then limits lift', async () => 
   let r = await bob.c.rpc('start_trial')
   assert.ifError(r.error)
   assert.equal(r.data.state, 'TRIAL')
+  assert.equal(r.data.plan, 'pro')
   assert.ok(r.data.features.includes('unlimited_trackers'))
   r = await bob.c.rpc('start_trial')
   assert.match(r.error?.message ?? '', /already been used/)
@@ -147,10 +150,28 @@ await test('expired Pro keeps data but free limits return', async () => {
   assert.match(r.error?.message ?? '', /PLAN_LIMIT/)
 })
 
+await test('Plus plan: no ads and unlimited trackers, but no Pro-only exports', async () => {
+  const dave = await signUp(`ld_${suffix}`)
+  users.push(dave)
+  await adminSql(`insert into public.subscriptions (user_id, provider, plan, status, started_at, expires_at) values ('${dave.id}', 'manual', 'plus', 'active', now(), now() + interval '30 days')`)
+  const e = await ent(dave)
+  assert.equal(e.plan, 'plus')
+  assert.equal(e.state, 'ACTIVE')
+  assert.ok(e.features.includes('no_ads') && e.features.includes('custom_themes'))
+  for (const name of ['1', '2', '3']) assert.ifError((await dave.c.from('trackers').insert({ name })).error)
+  assert.ifError((await dave.c.from('profiles').update({ accent_theme: 'sunset' }).eq('id', dave.id)).error)
+  const r = await dave.c.rpc('export_timetable', { p_from: '2026-09-01', p_to: '2026-09-30' })
+  assert.match(r.error?.message ?? '', /PRO_REQUIRED/)
+  // Plus and Pro at the same time: the higher plan wins
+  await adminSql(`insert into public.subscriptions (user_id, provider, plan, status, started_at, expires_at) values ('${dave.id}', 'manual', 'pro', 'active', now(), now() + interval '30 days')`)
+  assert.equal((await ent(dave)).plan, 'pro')
+})
+
 let aTask
 await test('Pro (server-granted) export returns only own rows', async () => {
   await adminSql(`insert into public.subscriptions (user_id, provider, plan, status, started_at, expires_at) values ('${alice.id}', 'manual', 'pro', 'active', now(), now() + interval '30 days')`)
-  assert.equal((await ent(alice)).state, 'PRO')
+  assert.equal((await ent(alice)).state, 'ACTIVE')
+  assert.equal((await ent(alice)).plan, 'pro')
   const t = aTrackers[0]
   const slot = (await alice.c.from('time_slots').insert({ tracker_id: t.id, start_time: '08:00', end_time: '09:00' }).select().single()).data
   aTask = (await alice.c.from('tasks').insert({ tracker_id: t.id, time_slot_id: slot.id, day_of_week: 1, title: 'Secret plan', description: 'private note' }).select().single()).data
@@ -281,7 +302,7 @@ await test('change username: validated, unique, needs password, keeps all data',
   assert.equal(t.length, 2, 'trackers kept')
   const { data: f } = await fresh.rpc('list_friends')
   assert.ok(f.some((x) => x.username === bob.username), 'friendships kept')
-  assert.equal((await fresh.rpc('my_entitlements')).data.state, 'PRO', 'plan kept')
+  assert.equal((await fresh.rpc('my_entitlements')).data.plan, 'pro', 'plan kept')
   // friends see the new name
   const { data: bf } = await bob.c.rpc('list_friends')
   assert.ok(bf.some((x) => x.username === `la2_${suffix}`))

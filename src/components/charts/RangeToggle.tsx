@@ -35,7 +35,7 @@ export function RangeToggle({ value, onChange, size = 'sm' }: { value: number; o
           {locked(r.days) && (
             <>
               <Lock className="size-3" aria-hidden="true" />
-              <span className="sr-only"> (Pro)</span>
+              <span className="sr-only"> (paid plans)</span>
             </>
           )}
         </button>

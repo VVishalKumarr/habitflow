@@ -71,8 +71,8 @@ Deno.serve(async (req) => {
   if (!token || token.length > 4096) return json(req, { error: 'Missing purchase token.' }, 400)
 
   const admin = adminClient()
-  const { data: plan } = await admin.from('plans').select('google_play_product_id').eq('id', 'pro').single()
-  if (!plan?.google_play_product_id) return json(req, { error: 'Google Play product isn’t configured.' }, 503)
+  const { data: plans } = await admin.from('plans').select('id, google_play_product_id').not('google_play_product_id', 'is', null)
+  if (!plans?.length) return json(req, { error: 'Google Play products aren’t configured.' }, 503)
 
   try {
     const access = await googleAccessToken(JSON.parse(saJson) as ServiceAccount)
@@ -87,8 +87,10 @@ Deno.serve(async (req) => {
       externalAccountIdentifiers?: { obfuscatedExternalAccountId?: string }
     }
 
-    const item = purchase.lineItems?.find((l) => l.productId === plan.google_play_product_id)
-    if (!item) return json(req, { error: 'This purchase is not for HabitFlow Pro.' }, 400)
+    // Which of our plans was bought (each paid plan has its own Play product).
+    const item = purchase.lineItems?.find((l) => plans.some((p) => p.google_play_product_id === l.productId))
+    const plan = plans.find((p) => p.google_play_product_id === item?.productId)
+    if (!item || !plan) return json(req, { error: 'This purchase is not for a HabitFlow plan.' }, 400)
     if (purchase.externalAccountIdentifiers?.obfuscatedExternalAccountId !== who.user.id) {
       return json(req, { error: 'This purchase belongs to a different account.' }, 403)
     }
@@ -99,7 +101,7 @@ Deno.serve(async (req) => {
         user_id: who.user.id,
         provider: 'google_play',
         provider_subscription_id: token,
-        plan: 'pro',
+        plan: plan.id,
         status,
         started_at: purchase.startTime ?? null,
         expires_at: item.expiryTime ?? null,

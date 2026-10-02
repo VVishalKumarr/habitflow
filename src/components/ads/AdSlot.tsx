@@ -37,7 +37,7 @@ export function AdSlot({ placement, className = '' }: { placement: AdPlacement; 
   const client = adsConfig.adsenseClientId
   const pushed = useRef(false)
 
-  // Signed-in users: wait for the plan so Pro members never see a flash of ads.
+  // Signed-in users: wait for the plan so paying members never see a flash of ads.
   const show = !isNative && Boolean(client && slot) && consent && !(signedIn && (noAds || entLoading))
 
   useEffect(() => {

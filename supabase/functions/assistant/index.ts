@@ -48,8 +48,11 @@ Deno.serve(async (req) => {
     return json(req, { error: 'You’ve asked a lot of questions — please try again a bit later.', code: 'rate_limited' }, 429)
   }
 
-  // Only the plan name ("free"/"pro") is shared, so answers about Pro make sense.
-  const { data: plan } = await adminClient().rpc('plan_of', { p_user: who.user.id })
+  // Only the plan name (Free/Plus/Pro) is shared, so answers about plans make sense.
+  const admin = adminClient()
+  const { data: planId } = await admin.rpc('plan_of', { p_user: who.user.id })
+  const { data: planRow } = await admin.from('plans').select('name').eq('id', planId ?? 'free').maybeSingle()
+  const planName = planRow?.name ?? 'Free'
 
   const history: Anthropic.Beta.BetaMessageParam[] = (body?.history ?? [])
     .filter((t) => (t.role === 'user' || t.role === 'assistant') && typeof t.content === 'string')
@@ -68,7 +71,7 @@ Deno.serve(async (req) => {
       fallbacks: 'default',
       output_config: { effort: 'low' },
       system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
-      messages: [...history, { role: 'user', content: `[Page: ${page}] [Plan: ${plan === 'pro' ? 'Pro' : 'Free'}]\n${question}` }],
+      messages: [...history, { role: 'user', content: `[Page: ${page}] [Plan: ${planName}]\n${question}` }],
     } as Anthropic.Beta.MessageCreateParamsNonStreaming)
 
     if (response.stop_reason === 'refusal') {

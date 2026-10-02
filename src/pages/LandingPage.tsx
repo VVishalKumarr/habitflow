@@ -1,6 +1,6 @@
 import { CalendarClock, ChartNoAxesColumn, CheckCircle2, Heart, Layers, ShieldCheck, Smartphone, Timer, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { PlanCards, useIntervalToggle } from '../components/pricing/PlanCards'
+import { PlanCards, RegionSwitch, useIntervalToggle } from '../components/pricing/PlanCards'
 import { appConfig } from '../config'
 import { useAuth } from '../store/auth'
 
@@ -22,7 +22,7 @@ const STEPS = [
 ]
 
 const FAQ = [
-  ['Is HabitFlow free?', 'Yes. The free plan covers the timetable, check-offs, streaks, the focus timer and friends. Pro is optional.'],
+  ['Is HabitFlow free?', 'Yes. The free plan covers the timetable, check-offs, streaks, the focus timer and friends. Plus and Pro are optional upgrades.'],
   ['Do I need an email address?', 'No — just a username and password. Adding a recovery email is optional, but without one a forgotten password can’t be reset.'],
   ['Is there a phone app?', 'HabitFlow works in any browser on phones, tablets and computers, and there is an Android app build.'],
   ['Can friends see my tasks?', 'No. Friends only see daily totals such as completion percentage and focus minutes, and you can switch even that off.'],
@@ -137,7 +137,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-5xl px-4 py-16 sm:px-6">
           <div className="text-center">
             <h2 id="pricing-title" className="text-3xl font-semibold tracking-tight">
-              Free vs Pro
+              Simple, fair pricing
             </h2>
             <p className="mt-2 text-muted">Start free. Upgrade only if you want more.</p>
             <div className="mt-5">{toggle}</div>
@@ -145,17 +145,21 @@ export default function LandingPage() {
           <div className="mt-10">
             <PlanCards
               interval={interval}
-              freeAction={
-                <Link to={signedIn ? '/dashboard' : '/register'} className="btn-secondary h-11">
-                  {signedIn ? 'Open app' : 'Create Free Account'}
-                </Link>
-              }
-              proAction={
-                <Link to="/pro" className="btn-primary h-11">
-                  See Pro
-                </Link>
+              renderAction={(plan) =>
+                plan.rank === 0 ? (
+                  <Link to={signedIn ? '/dashboard' : '/register'} className="btn-secondary h-11">
+                    {signedIn ? 'Open app' : 'Create Free Account'}
+                  </Link>
+                ) : (
+                  <Link to="/pro" className={plan.id === 'pro' ? 'btn-primary h-11' : 'btn-secondary h-11'}>
+                    Get {plan.name}
+                  </Link>
+                )
               }
             />
+          </div>
+          <div className="mt-6">
+            <RegionSwitch />
           </div>
         </div>
       </section>
